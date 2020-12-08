@@ -15,7 +15,7 @@ module factors
     #Functions----
 
     function riskFactors(test::Bool = false)
-        #Cálculo dos fatores de risco em base diária
+        #Busca de dados e pré-processamento para cálculo
 
         #Consultas
         tickers ::DataFrame = getTickers();
@@ -63,7 +63,8 @@ module factors
     end
 
 
-    #Util Functions
+    #Util Functions----
+
     function appendDataFrames(size::DataFrame, value::DataFrame, liquidity::DataFrame, momentum::DataFrame, market::DataFrame) ::DataFrame
         #Realiza a junção de todos os dataframes de fatores de risco
         result ::DataFrame;
