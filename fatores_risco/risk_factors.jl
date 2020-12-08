@@ -10,6 +10,8 @@ module factors
     #Export functions----
     export riskFactors;
 
+
+
     #Functions----
 
     function riskFactors(test::Bool = false)
@@ -22,23 +24,23 @@ module factors
 
         #Processamento de dados
         returns ::DataFrame = calculateReturns(prices);
-        calculatedFactors = returns;
-#        factors ::DataFrame = calculateRiskFactors(returns, stocks);
-#        CSV.write("../data/riskFactors.csv", factors);
+
+        calculatedFactors ::DataFrame = calculateRiskFactors(returns, stocks);
+#        CSV.write("../data/riskFactors.csv", calculatedFactors);
         return calculatedFactors;
     end
 
 
 
     function calculateRiskFactors(returns::DataFrame, stocks::DataFrame)::DataFrame
+        #Cálculo dos fatores de risco
         size::DataFrame = sizeFactor(returns, stocks);
         value::DataFrame = valueFactor(returns, stocks);
         liquidity::DataFrame = liquidityFactor(returns);
         momentum::DataFrame = momentumFactor(returns);
         market::DataFrame = marketFactor(returns);
 
-        resultRiskFactors ::DataFrame = appendDataFrames(size, value, liquidity, momentum, market);
-        return resultRiskFactors;
+        return appendDataFrames(size, value, liquidity, momentum, market);
     end
 
     function sizeFactor(returns::DataFrame, stocks::DataFrame) ::DataFrame

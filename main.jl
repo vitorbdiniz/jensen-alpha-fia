@@ -1,4 +1,4 @@
-include("./risk_factors.jl");
+include("./fatores_risco/risk_factors.jl");
 using .factors;
 
 function main()
