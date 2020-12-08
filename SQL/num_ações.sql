@@ -1,5 +1,4 @@
-SELECT demonstrativos.codigo_cvm AS codigo_cvm,data_referencia,qtd_acao_ordinaria_capital_integralizado AS ordinarias, qtd_acao_preferencial_capital_integralizado AS preferenciais, qtd_total_acao_capital_integralizado AS total
+SELECT codigo_cvm,data_referencia,qtd_acao_ordinaria_capital_integralizado AS ordinarias, qtd_acao_preferencial_capital_integralizado AS preferenciais, qtd_total_acao_capital_integralizado AS total
 FROM demonstrativos
-WHERE demonstrativos.codigo_cvm
 ORDER BY codigo_cvm, data_referencia
 ;

@@ -1,6 +1,6 @@
 module factors
     #Libs----
-    using DataFrames, CSV, Dates;
+    using DataFrames, CSV, Dates, Statistics;
 
     #My Modules----
     include("../MySQL/mysql_access.jl");
@@ -22,31 +22,43 @@ module factors
         prices  ::DataFrame = getPrices(test);
         stocks  ::DataFrame = getStocks();
 
-        #Processamento de dados
+        #Processamento dos preços
         returns ::DataFrame = calculateReturns(prices);
 
-        calculatedFactors ::DataFrame = calculateRiskFactors(returns, stocks);
+        calculatedFactors ::DataFrame = returns;
+        calculateRiskFactors!(calculatedFactors, stocks);
 #        CSV.write("../data/riskFactors.csv", calculatedFactors);
         return calculatedFactors;
     end
 
 
 
-    function calculateRiskFactors(returns::DataFrame, stocks::DataFrame)::DataFrame
+    function calculateRiskFactors!(factorsData::DataFrame, stocks::DataFrame)#::DataFrame
         #Cálculo dos fatores de risco
-        size::DataFrame = sizeFactor(returns, stocks);
-        value::DataFrame = valueFactor(returns, stocks);
-        liquidity::DataFrame = liquidityFactor(returns);
-        momentum::DataFrame = momentumFactor(returns);
-        market::DataFrame = marketFactor(returns);
-
-        return appendDataFrames(size, value, liquidity, momentum, market);
+        sizeFactor!(factorsData, stocks);
+        println(factorsData);
+#        valueFactor!(factorsData, stocks);
+#        liquidityFactor!(factorsData);
+#        momentumFactor!(factorsData);
+#        marketFactor!(factorsData);
+#
+#        return appendDataFrames(size, value, liquidity, momentum, market);
     end
 
-    function sizeFactor(returns::DataFrame, stocks::DataFrame) ::DataFrame
-        #TODO
+    function sizeFactor!(factorsData::DataFrame, stocks::DataFrame) #::DataFrame
+        marketCapitalization!(factorsData, stocks);
+        createPortfolio!(factorsData, marketCap, med);
 
     end
+
+    function marketCapitalization!(factorsData::DataFrame, stocks::DataFrame)
+        for stock in unique(stocks."codigo_cvm")
+            
+            
+        end
+        
+    end
+
     function valueFactor(returns::DataFrame, stocks::DataFrame) ::DataFrame
         #TODO
 
