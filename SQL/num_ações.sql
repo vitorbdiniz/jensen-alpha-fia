@@ -1,4 +1,0 @@
-SELECT codigo_cvm,data_referencia,qtd_acao_ordinaria_capital_integralizado AS ordinarias, qtd_acao_preferencial_capital_integralizado AS preferenciais, qtd_total_acao_capital_integralizado AS total
-FROM demonstrativos
-ORDER BY codigo_cvm, data_referencia
-;
