@@ -1,13 +1,12 @@
 module factors
+
     #Libs----
     using DataFrames, CSV, Dates, Statistics;
 
     #Include Modules----
     include("../MySQL/mysql_access.jl");
-    include("./get_prices.jl");
-    include("./selection_criteria.jl");
     include("../utils.jl");
-    using .DBAccess, .prices, .criteria, .utils;
+    using .criteria, .utils;
 
     #Export functions----
     export riskFactors;
@@ -16,34 +15,17 @@ module factors
 
     #Functions----
 
-    function riskFactors(test::Bool = false, verbose::Bool = false, persist::Bool = true)
+    function riskFactors(;verbose::Bool = false)
         #Busca de dados e pré-processamento para cálculo
 
-        #Consultas----
-
-        ## Ações
-        verboseMessage(verbose, "Buscando ações");
-        stocks  ::DataFrame = getStocks();
-        persistDataFrame(stocks, "./data/stocks.csv", persist);
-
-        ## Tickers
-        verboseMessage(verbose, "Buscando tickers");
-        tickers ::DataFrame = getTickers();
-        persistDataFrame(tickers, "./data/tickers.csv", persist);
-
-        ## Cotações
-        verboseMessage(verbose, "Buscando cotações");
-        prices  ::DataFrame = getPrices(test);
-        persistDataFrame(prices, "./data/prices.csv", persist);
-
         verboseMessage(verbose, "Verificando elegibilidade");
-        elegibilityCriteria!(prices, verbose);
+        elegibilityCriteria!(prices, tickers, verbose);
 #        persistDataFrame(prices, "./data/prices.csv", persist);
 
         # Processamento dos retornos
-        verboseMessage(verbose, "Calculando retornos");
-        returns ::DataFrame = calculateReturns(prices);
-        persistDataFrame(returns, "./data/returns.csv", persist);
+        
+        
+
 
         # Cálculo de fatores de risco
         calculatedFactors ::DataFrame = returns;
@@ -158,14 +140,21 @@ module factors
         return result;
     end
 
-    function calculateReturns(prices::DataFrame)
+    function calculateReturns(prices::DataFrame, verbose::Bool = false)
         #Calcula retornos diários
+
+        verboseMessage(verbose, "Calculando retornos");
+
         ret::Array{Float64, 1} = [];
         for i in 2:nrow(prices)
             append!(ret, prices."Adj Close"[i]/prices."Adj Close"[i-1]-1);
         end
         delete!(prices, 1);
-        return DataFrame(codigo_cvm = prices."codigo_cvm", ticker_id = prices."ticker_id",codigo_negociacao = prices."codigo_negociacao",data=prices."date",price = prices."Adj Close",retornos = ret, volume = prices."Volume");
+
+        returns::DataFrame = DataFrame(codigo_cvm = prices."codigo_cvm", ticker_id = prices."ticker_id",codigo_negociacao = prices."codigo_negociacao",data=prices."date",price = prices."Adj Close",retornos = ret, volume = prices."Volume");
+        persistDataFrame(returns, "./data/returns.csv", persist);
+
+        return returns
     end
 
 

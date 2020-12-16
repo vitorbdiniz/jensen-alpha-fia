@@ -9,7 +9,7 @@ module utils
         len::Int64 = nrow(tickers);
         i::Int64 = 1;
         while i <= len
-            if tickers."codigo_negociacao"[i][lastindex(tickers."codigo_negociacao"[i])] == '1'
+            if tickers."codigo_negociacao"[i][lastindex(tickers."codigo_negociacao"[i])-1] == '1'
                 delete!(tickers, i);
                 len -= 1;
             end

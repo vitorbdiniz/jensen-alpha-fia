@@ -1,6 +1,9 @@
 module DBAccess
     using DataFrames, MySQL;
-    export getTickers, getStocks, getDF, getAccount;
+    include("../utils.jl");
+    using .utils;
+
+    export getTickers, getStocks, getDF, getAccount, getStockQuantity;
 
     function connectMySQL(environment = "prod")
         #Conexão com o BD
@@ -22,7 +25,7 @@ module DBAccess
     end
 
 
-    function executeQuery(query, env = "Prod")
+    function executeQuery(query, env = "Prod") ::DataFrame
         #Envia consulta ao BD
         connection = connectMySQL(env);
         result = DBInterface.execute(connection, query);
@@ -32,29 +35,44 @@ module DBAccess
     end
 
 
-    function getAccount(code ::String)
+    function getAccount(code ::String) ::DataFrame
         #Busca uma conta específica de todas as empresas
-        query = open(f->read(f, String), "./SQL/single_account_query.sql")
+        query = open(f->read(f, String), "./MySQL/SQL/single_account_query.sql")
         query = replace(query, ":code:" => code)  
         return executeQuery(query) 
     end
 
-    function getDF(cvm ::String)
+    function getDF(cvm ::String) ::DataFrame
         #Busca demonstrativos de uma determidada empresa
-        query = open(f->read(f, String), "./SQL/getDF.sql")
+        query = open(f->read(f, String), "./MySQL/SQL/getDF.sql")
         query = replace(query, ":cvm:" => cvm) 
         return executeQuery(query) 
     end
 
-    function getTickers() ::DataFrame
+    function getTickers(verbose::Bool=false, persist::Bool=false) ::DataFrame
         #Busca lista de tickers
-        query = open(f->read(f, String), "./SQL/getTickers.sql")
-        return executeQuery(query, "hml")
+        verboseMessage(verbose, "Buscando tickers");
+        
+        query = open(f->read(f, String), "./MySQL/SQL/getTickers.sql")
+        result::DataFrame = executeQuery(query, "hml");
+        
+        persistDataFrame(result, "./data/tickers.csv", persist);        
+        return result;
     end
 
-    function getStocks() ::DataFrame
+    function getStocks(verbose::Bool=false, persist::Bool=false) ::DataFrame
         #Busca quantidades de ações para cada empresa
-        query = open(f->read(f, String), "./SQL/stocks.sql")
+        verboseMessage(verbose, "Buscando ações");
+        
+        query = open(f->read(f, String), "./MySQL/SQL/stocks.sql")
+        result::DataFrame = executeQuery(query, "hml");
+
+        persistDataFrame(result, "./data/stocks.csv", persist);
+        return result;
+    end
+    function getStockQuantity(verbose::Bool=false, persist::Bool=false)::DataFrame
+        
+        query = open(f->read(f, String), "./MySQL/SQL/numberTickers.sql")
         return executeQuery(query, "hml")        
     end
 end

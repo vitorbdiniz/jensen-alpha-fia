@@ -2,20 +2,22 @@ module criteria
     using DataFrames, Dates;
 
     include("../utils.jl");
-    using .utils;
+    include("../MySQL/mysql_access.jl");
+    using .utils, .DBAccess;
 
 
 
     export elegibilityCriteria!;
 
-    function elegibilityCriteria!(prices::DataFrame, verbose::Bool)
-        # Selecionar ações com alguma liquidez em, pelo menos, 80% (200 dias) dos pregões para o último ano
+    function elegibilityCriteria!(prices::DataFrame, tickers::DataFrame, verbose::Bool)
+
+        # Selecionar ações com alguma liquidez em, pelo menos, 80% dos pregões (200 dias) para o último ano
         verboseMessage(verbose, "- Avaliando liquidez anual");
         liquidityCriterion!(prices, verbose);
 
         # Selecionar ação mais negociada da empresa
         verboseMessage(verbose, "- Avaliando liquidez por ticker da empresa");
-        stockCriterion!(prices);
+        stockCriterion!(prices, tickers);
 
         # listada desde dez/(t-1)
         verboseMessage(verbose, "- Avaliando tempo de listagem");
@@ -69,9 +71,26 @@ module criteria
 
         end
     end
-    function stockCriterion!(prices::DataFrame)
-        println("TODO")
+    function stockCriterion!(prices::DataFrame, tickers::DataFrame)
+        quantity::DataFrame = getStockQuantity();
+        i::Int = 1;
+        len::Int64 = nrow(prices);
+        while quantity."quantity"[i] > 1
+            keepHighestLiquidity!(prices, tickers, quantity."codigo_cvm"[i]);
+            i += 1;
+        end
     end
+
+    function keepHighestLiquidity!(prices::DataFrame, tickers::DataFrame, codigo_cvm::Int64)
+        i::Int64 = findfirst(x -> x == codigo_cvm, prices."codigo_cvm");
+        liqs::Array{Float64, 1} = []
+        ticks
+        ticker::Int64 = prices."ticker_id"[i];
+#
+        
+    end
+
+
     function timeCriterion!(prices::DataFrame)
         println("TODO")
     end
