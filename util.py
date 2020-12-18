@@ -2,12 +2,15 @@ import pandas as pd
 import datetime as dt
 import pandas_datareader as web
 
+from busca_dados import getSelic
+
 
 def getQuarter(date):
     '''
         Converte string de data para formato trimestral.
 
         Ex.: getQuarter("2020-05-22") -> "2T2020"
+        Ex.: getQuarter("2001-11-09T00:12:45Z") -> "4T2001"
     '''
     d = str(date).split("-")  # d[0] == year; d[1] == month; d[2] == day
     if int(d[1]) <= 3:
@@ -22,16 +25,54 @@ def getQuarter(date):
 
 
 def compareQuarters(q1, q2):
+    '''
+        Compara 2 trimestres.
+
+        Ex.: compareQuarters("2T2020", "1T2020") -> 1
+        Ex.: compareQuarters("1T2001", "4T2000") -> -1
+    '''
+
     firstQ = q1.split("T")
     lastQ = q2.split("T")
     return 4*(int(firstQ[1]) - int(lastQ[1])) + (int(firstQ[0]) - int(lastQ[0]))
 
+def compareTime(t1, t2, freq):
+    if freq == "quarterly":
+        res = compareQuarters(t1, t2)
+    elif freq == "annually":
+        res = t1-t2
+    elif freq == "daily":
+        res = (dt.date(int(t1[0:4]), int(t1[5:7]), int(t1[8:10])) - dt.date(int(t2[0:4]), int(t2[5:7]), int(t2[8:10]))).days
+    else:
+        raise AttributeError("Frequência não estipulada corretamente")
+    return res
+
+def getNextPeriod(time, freq):
+    if freq == "quarterly":
+        res = nextQuarter(time)
+    elif freq == "annually":
+        res = int(time)+1
+    elif freq == "daily":
+        res = str(dt.date(int(time[0:4]), int(time[5:7]), int(time[8:10]))+ dt.timedelta(days=1))
+    else:
+        raise AttributeError("Frequência não estipulada corretamente")
+    return res
 
 def getYear(str_date):
+    '''
+        retorna o ano de uma data
+
+        Ex.: getYear("2005-01-05") -> 2005
+    '''
     return int(str_date[0:4])
 
 
-def getQuarterRange(start='2010-01-01', end='2020-12-14'):
+def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
+    '''
+        Retorna trimestres existentes em um dado intervalo de datas
+        Ex.: getQuarterRange("2019-11-01", "2020-12-20") -> ["4T2019","1T2020","2T2020","3T2020","4T2020"]
+    '''
+
     firstQ = getQuarter(start)
     lastQ = getQuarter(end)
     res = []
@@ -44,10 +85,16 @@ def getQuarterRange(start='2010-01-01', end='2020-12-14'):
 
 
 def getUtilDays(start, end):
-    return [str(x.date()) for x in web.get_data_yahoo("^BVSP", start=start, end=end).index]
+    '''
+        Busca dias úteis em um intervalo dado
+    '''
+    return list(getSelic(start, end).index)
 
 
 def count_quarter_days(start, end):
+    '''
+        Conta os dias úteis por trimestre em um intervalo [start, end]
+    '''
     time = getUtilDays(start, end)
     quarters = getQuarterRange(start, end)
     qdays = {q: 0 for q in quarters}
@@ -57,6 +104,11 @@ def count_quarter_days(start, end):
 
 
 def nextQuarter(quarter):
+    '''
+        Retorna o trimestre que segue o trimestre fornecido
+
+        Ex.: nextQuarter("2T2020") -> "3T2020"
+    '''
     q = quarter.split("T")
     nextq = 0
     nexty = 0
@@ -70,6 +122,11 @@ def nextQuarter(quarter):
 
 
 def count_year_days(dates):
+    '''
+        Conta dias úteis existentes em uma lista de datas
+    '''
+
+
     res = []
     days = 0
     year = dates[0][0:4]
@@ -100,22 +157,6 @@ def findSimilar(ticker, ticker_list):
         if code == getCode(t).upper():
             similar += [t]
     return similar
-
-
-def getMostLiquidTicker(prices, tickers, quarter):
-    liquidity = {}
-
-    for t in tickers:
-        liq = 0
-        for d in prices[t].index:
-            if getQuarter(str(d)) == quarter:
-                liq += prices[t]["Volume"].loc[d]
-        liquidity[t] = liq
-    highest = list(liquidity.keys())[0]
-    for t in liquidity:
-        if liquidity[highest] < liquidity[t]:
-            highest = t
-    return highest
 
 
 def reformatDecimalPoint(commaNumberList, to="."):
@@ -153,3 +194,24 @@ def transform(date, freq):
     else:
         result = date
     return result
+
+
+def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"):
+    '''
+        Retorna uma tupla (index, days_number), em que index representa uma lista temporal na frequência desejada e days_number, a quantidade de dias dentro de cada intervalo de tempo
+        freq == "daily" or freq == "quarterly" or freq == "annually"
+    '''
+
+    if freq == "daily":
+        index = getUtilDays(str(start), str(end))
+        days_number = [1 for i in index]
+    elif freq == "quarterly":
+        index = getQuarterRange(str(start), str(end))
+        days_number = [d for d in count_quarter_days(str(start), str(end)).values()]
+    elif freq == "annually":
+        index = getYears(str(start), str(end))
+        days_number = count_year_days(getUtilDays(str(start), str(end)))
+    else:
+        raise AttributeError("Frequência não estipulada corretamente")
+
+    return index, days_number
