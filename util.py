@@ -2,8 +2,6 @@ import pandas as pd
 import datetime as dt
 import pandas_datareader as web
 
-from busca_dados import getSelic
-
 
 def getQuarter(date):
     '''
@@ -88,7 +86,10 @@ def getUtilDays(start, end):
     '''
         Busca dias úteis em um intervalo dado
     '''
-    return list(getSelic(start, end).index)
+    start = dateReformat(start)
+    end = dateReformat(end)
+    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
+    return list(datesReformat(pd.read_csv(url, sep=";")["data"], toUsual=False))
 
 
 def count_quarter_days(start, end):
