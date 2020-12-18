@@ -3,7 +3,8 @@ import datetime as dt
 
 from busca_dados import get_prices
 from criterios_elegibilidade import criterios_elegibilidade
-import matrixDB
+from formacao_carteiras import forma_carteiras
+from fatores_risco import calcula_fatores_risco
 
 
 
