@@ -17,16 +17,20 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(), verbose = Fa
         senão, se tickers == "all", então o BD é acessado e todas as cotações são buscadas
     '''
     if tickers == "all":
-        tickers = matrixDB.get_tickers(environment = "prod", verbose = verbose)
-
+        tickers = [ x.replace("$", "") for x in list(matrixDB.get_tickers(environment = "prod", verbose = verbose)[3])]
+    elif type(tickers) != type([]):
+        raise AttributeError("ticker deve ser 'all' ou list")
     i = 1
     prices = dict()
     for t in tickers:
         if verbose:
-            print(str(i) + ". Buscando preços de " + t + " ---- faltam " + str(len(tickers)-i))
+            print(str(i) + ". Buscando preços de " + str(t) + " ---- faltam " + str(len(tickers)-i))
             i+=1
         try:
-            prices[t] = web.get_data_yahoo(t+".SA", start, end)
+            if t[0] != '^':
+                prices[t] = web.get_data_yahoo(t+".SA", start, end)
+            else:
+                prices[t] = web.get_data_yahoo(t, start, end)
         except:
             if verbose:
                 print("------- 404 -> Not found")
@@ -34,7 +38,9 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(), verbose = Fa
 
 
 
-def getSelic(start = dt.date.today(), end = dt.date.today()):
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False):
+    if verbose:
+        print("Buscando série histórica da Selic")
     start = util.dateReformat(start)
     end = util.dateReformat(end)
     url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
@@ -43,3 +49,5 @@ def getSelic(start = dt.date.today(), end = dt.date.today()):
     selicBCB["data"] = util.datesReformat(selicBCB["data"], False)
     selic = pd.DataFrame({"valor":list(selicBCB["valor"])}, index = selicBCB["data"])
     return selic
+
+

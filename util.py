@@ -216,3 +216,10 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
         raise AttributeError("Frequência não estipulada corretamente")
 
     return index, days_number
+
+def getReturns(prices):
+    returns = pd.DataFrame(index=prices.index)
+    r = [prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
+    returns["returns"] = [None]+r
+    return returns
+    

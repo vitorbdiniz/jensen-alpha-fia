@@ -60,3 +60,6 @@ def get_account(account, environment = "prod", verbose = False):
     query = query.replace(":code:", account)
     return execute_sql(query, environment=environment, verbose=verbose)
 
+def get_equity(environment = "prod", verbose = False):
+    query = open(realpath("./SQL/getEquity.sql"), 'r').read()
+    return execute_sql(query, environment=environment, verbose=verbose)
