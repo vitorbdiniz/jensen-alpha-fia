@@ -60,7 +60,7 @@ def aplica_criterio_liquidez(prices, elegibilidade_liquidez, index, criterion, v
         if ticker == "days_number":
             continue
         if verbose:
-            print(str(i) + ". Aplicando critério de liquidez em " + ticker + " ---- faltam " + str(len(prices.keys())-i))
+            print(str(i) + ". Aplicando critério de liquidez mínima em " + ticker + " ---- faltam " + str(len(prices.keys())-i))
             i+=1
         for q in elegibilidade_liquidez.index:
             if elegibilidade_liquidez[ticker].loc[q]/elegibilidade_liquidez["days_number"].loc[q] >= criterion:
@@ -90,7 +90,7 @@ def criterio_maior_liquidez(prices, start = dt.date.today(), end = dt.date.today
     for ticker in prices:
         if ticker in done:
             continue
-        print(str(i)+". Verificando maior liquidez "+ ticker + " ---- faltam "+str(len(prices)-i))
+        print(str(i)+". Aplicando critério de maior liquidez em "+ ticker + " ---- faltam "+str(len(prices)-i))
         cia_tickers = util.findSimilar(ticker, list(prices.keys()))
         i+=len(cia_tickers)
         for q in elegibilidade_tickers:
@@ -125,7 +125,7 @@ def criterio_listagem(prices, start = dt.date.today(), end = dt.date.today(), fr
     i = 1
     for ticker in prices:
         if verbose:
-            print(str(i)+". Verificando listagem de "+ ticker + " ---- faltam "+str(len(prices)-i))
+            print(str(i)+". Aplicando critério de listagem em "+ ticker + " ---- faltam "+str(len(prices)-i))
             i += 1
         q = util.transform(str(prices[ticker].index[0].date()), freq)
         if freq == "quarterly" or freq == "annually":
