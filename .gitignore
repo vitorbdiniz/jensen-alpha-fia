@@ -24,5 +24,9 @@ docs/site/
 Manifest.toml
 
 
-#Arquivos de cotações de ativos
-data/prices/
+#Arquivos csv 
+data/
+
+
+
+
