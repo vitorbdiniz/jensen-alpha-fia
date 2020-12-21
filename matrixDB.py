@@ -62,4 +62,12 @@ def get_account(account, environment = "prod", verbose = False):
 
 def get_equity(environment = "prod", verbose = False):
     query = open(realpath("./SQL/getEquity.sql"), 'r').read()
-    return execute_sql(query, environment=environment, verbose=verbose)
+    equity = execute_sql(query, environment=environment, verbose=verbose)
+    equity[0] = [x.replace("$", "") for x in equity[0]]
+    return equity
+
+
+
+
+
+    
