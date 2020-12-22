@@ -9,18 +9,14 @@ import util
 
 def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False, persist=False):
 
-    value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
-    value.to_csv("./data/carteiras/value.csv")
     size      = carteiraSize(prices, amostra_aprovada, start, end, freq,verbose)
-    size.to_csv("./data/carteiras/size.csv")
+    value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, verbose)
-    liquidity.to_csv("./data/carteiras/liquidity.csv")
     momentum  = carteiraMomentum(prices, amostra_aprovada, start, end, verbose)
-    momentum.to_csv("./data/carteiras/momentum.csv")
 #    quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
 #    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
 
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=True, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
     #carteiras = consolidaCarteiras(value, size, liquidity, momentum, quality, beta, dfUnico=True, verbose=verbose)
 
     if persist:
@@ -37,7 +33,7 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
 
 def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
     '''
-        Classifica cada ativo por período em "high" ou "low" de acordo com o múltiplo book-to-market (BM)
+        Classifica cada ativo por período (diário, trimestral ou anual) em "high" ou "low" de acordo com o múltiplo book-to-market (BM)
     '''
     if verbose:
         print("Montando carteiras de valor")
@@ -69,12 +65,11 @@ def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date
 
 def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq = "daily",verbose=False):
     '''
-        Classifica cada ativo por período em "big" ou "small" de acordo com o seu valor de mercado
+        Classifica cada ativo por período (diário, trimestral ou anual) em "big" ou "small" de acordo com o seu valor de mercado
     '''
-    stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
-
     if verbose:
         print("Montando carteiras de tamanho")
+    stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     i = 1
     size = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     for period in amostra_aprovada.index:
@@ -97,10 +92,9 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         print("-------------------------------------------------------------------------------------------")
     return size
 
-
 def carteiraLiquidity(prices, amostra_aprovada, verbose=False):
     '''
-        Classifica cada ativo por período em "liquid" ou "iliquid" de acordo com a sua liquidez
+        Classifica cada ativo por período (diário, trimestral ou anual) em "liquid" ou "iliquid" de acordo com a sua liquidez
     '''
     if verbose:
         print("Montando carteiras de liquidez")
@@ -128,7 +122,7 @@ def carteiraLiquidity(prices, amostra_aprovada, verbose=False):
     
 def carteiraMomentum(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
     '''
-        Classifica cada ativo por período em "winner" ou "loser" de acordo com seu retorno
+        Classifica cada ativo por período (diário, trimestral ou anual) em "winner" ou "loser" de acordo com seu retorno
     '''
     if verbose:
         print("Montando carteiras de momentum")
@@ -160,7 +154,7 @@ def carteiraMomentum(prices, amostra_aprovada, start= dt.date.today(), end= dt.d
 
 def carteiraQuality(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
     '''
-        Classifica cada ativo por período em "quality" ou "junk" de acordo com ... (Ver Buffett's Alpha)
+        Classifica cada ativo por período (diário, trimestral ou anual) em "quality" ou "junk" de acordo com ... (Ver Buffett's Alpha)
     '''
 
     # Profitability = z (z_gpoa + zroe + zroa + zcfoa + zgmar + zacc) 
@@ -182,7 +176,7 @@ def carteiraQuality(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
 
 def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), years = 5, verbose=False):
     '''
-        Classifica cada ativo por período em "high_beta" ou "low_beta" de acordo com o beta
+        Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
     '''
 
     if verbose:
@@ -274,28 +268,12 @@ def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbos
     else:
         consolidada = dict()
         i = 1
-
-        for ticker in value.columns:
-            if verbose:
-                print(str(i) + ". Consolidando ação: " + str(ticker) + " ---- restam " + str(len(value.columns)-i))
-                i+=1
-            col = []
-            v,s,l,m,q,b = [],[],[],[],[],[]
-            for index in value.index:
-                v += [str(value[ticker].loc[index]) ]
-                s += [str(size[ticker].loc[index]) ]
-                l += [str(liquidity[ticker].loc[index])]
-                m += [str(momentum[ticker].loc[index]) ]
-                #q += [str(quality[ticker].loc[index]) ]
-                #b += [str(beta[ticker].loc[index])]
-
-            consolidada["value"] = v
-            consolidada["size"] = s          
-            consolidada["liquidity"] = l
-            consolidada["momentum"] = m
-            #consolidada["quality"] = q
-            #consolidada["beta"] = b
-
+        consolidada["value"]     = value
+        consolidada["size"]      = size
+        consolidada["liquidity"] = liquidity
+        consolidada["momentum"]  = momentum
+        #consolidada["quality"]   = quality
+        #consolidada["beta"]      = beta
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return consolidada
@@ -335,7 +313,6 @@ def getVPA(PL, ticker, period, freq):
             break
     return float(df[10].iloc[row])
 
-
 def totalstocks(stocks, ticker, period, freq):
     df = stocks[stocks[0]==ticker]
     if df.shape[0] == 0:
@@ -346,6 +323,6 @@ def totalstocks(stocks, ticker, period, freq):
             row = i
         else:
             break
-    df = df[df[2] == release_date]
     return float(df[4].iloc[row])
+
 
