@@ -53,7 +53,9 @@ def get_tickers(environment = "prod", verbose = False):
 
 def get_stocks_quantity(environment = "prod", verbose = False):
     query = open(realpath("./SQL/stocks.sql"), 'r').read()
-    return execute_sql(query, environment=environment, verbose=verbose)
+    stocks = execute_sql(query, environment=environment, verbose=verbose)
+    stocks[0] = [x.replace("$", "") for x in stocks[0]]
+    return stocks
 
 def get_account(account, environment = "prod", verbose = False):
     query = open(realpath("./SQL/stocks.sql"), 'r').read()
