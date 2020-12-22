@@ -18,6 +18,8 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(), verbose = Fa
     '''
     if tickers == "all":
         tickers = [ x.replace("$", "") for x in list(matrixDB.get_tickers(environment = "prod", verbose = verbose)[3])]
+    elif str(tickers).lower() == "ibov" or str(tickers) == "^BVSP":
+        tickers = ["^BVSP"]
     elif type(tickers) != type([]):
         raise AttributeError("ticker deve ser 'all' ou list")
     i = 1
@@ -34,6 +36,9 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(), verbose = Fa
         except:
             if verbose:
                 print("------- 404 -> Not found")
+    
+    if verbose:
+        print("-------------------------------------------------------------------------------------------")
     return prices
 
 
@@ -48,6 +53,8 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False):
     selicBCB["valor"] = [ x/100 for x in util.reformatDecimalPoint(selicBCB["valor"], to=".")]
     selicBCB["data"] = util.datesReformat(selicBCB["data"], False)
     selic = pd.DataFrame({"valor":list(selicBCB["valor"])}, index = selicBCB["data"])
+    if verbose:
+        print("-------------------------------------------------------------------------------------------")
     return selic
 
 
