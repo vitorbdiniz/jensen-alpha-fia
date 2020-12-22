@@ -50,14 +50,13 @@ def main():
 
 	#### Forma carteiras para cada período
 	carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
-#	if persist:
-#		carteiras.to_csv("carteiras.csv", index=False)
+	if persist:
+		carteiras.to_csv("./data/carteiras/carteiras.csv")
 	
 	#### Calcula fatores de risco
-	#fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-	#if persist:
-		#fatores_risco.to_csv("fatores_risco.csv")
-
+	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, persist, verbose)
+	if persist:
+		fatores_risco.to_csv("./data/fatores_risco.csv")
 
 	return
 
