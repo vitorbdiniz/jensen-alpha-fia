@@ -20,7 +20,7 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
 #    quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
 #    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
 
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=True, verbose=verbose)
     #carteiras = consolidaCarteiras(value, size, liquidity, momentum, quality, beta, dfUnico=True, verbose=verbose)
 
     if persist:
@@ -52,7 +52,11 @@ def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date
         BM = []
         for ticker in amostra_aprovada.columns:
             if amostra_aprovada[ticker].loc[period]:
-                BM.append( prices[ticker]["Adj Close"].loc[period] / getVPA(patrimonio_liquido, ticker, period, freq) )
+                VPA = float(getVPA(patrimonio_liquido, ticker, period, freq))
+                if VPA == 0:
+                    BM.append(0)
+                else:
+                    BM.append( float(prices[ticker]["Adj Close"].loc[period]) / VPA )
             else:
                 BM.append(0)
         value.loc[period] = classificar(BM, "high", "low")
@@ -67,11 +71,11 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
     '''
         Classifica cada ativo por período em "big" ou "small" de acordo com o seu valor de mercado
     '''
+    stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
+
     if verbose:
         print("Montando carteiras de tamanho")
-
     i = 1
-    stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     size = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     for period in amostra_aprovada.index:
         if verbose:
@@ -80,7 +84,11 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         market_cap = []
         for ticker in amostra_aprovada.columns:
             if amostra_aprovada[ticker].loc[period]:
-                market_cap.append( prices[ticker]["Adj Close"].loc[period] * totalstocks(stocks, ticker, period, freq) )
+                N = float(totalstocks(stocks, ticker, period, freq))
+                if N == 0:
+                    market_cap.append(0)
+                else:
+                    market_cap.append( float(prices[ticker]["Adj Close"].loc[period]) * N )
             else:
                 market_cap.append(0)
         size.loc[period] = classificar(market_cap, "big", "small")
@@ -317,24 +325,27 @@ def classificar(lista, acima, abaixo):
 
 def getVPA(PL, ticker, period, freq):
     df = PL[PL[0]==ticker]
-    release_date = df[5].iloc[0]
+    if df.shape[0] == 0:
+        return 0
+    row = 0
     for i in range(len(df[5])):
-        if util.compareTime(period, df[5].iloc[i], freq) >= 1:
-            release_date = df[5].iloc[i]
+        if util.compareTime(str(period), str(df[5].iloc[i]), freq) >= 1:
+            row = i
         else:
             break
-    df = df[df[5] == release_date]
-    return df[10].iloc[0]
+    return float(df[10].iloc[row])
 
 
 def totalstocks(stocks, ticker, period, freq):
     df = stocks[stocks[0]==ticker]
-    release_date = df[2].iloc[0]
+    if df.shape[0] == 0:
+        return 0
+    row = 0
     for i in range(len(df[2])):
-        if util.compareTime(period, df[2].iloc[i], freq) >= 1:
-            release_date = df[2].iloc[i]
+        if util.compareTime(str(period), str(df[2].iloc[i]), freq) >= 1:
+            row = i
         else:
             break
     df = df[df[2] == release_date]
-    return df[5].iloc[0]
+    return float(df[4].iloc[row])
 
