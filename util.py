@@ -223,3 +223,5 @@ def getReturns(prices):
     returns["returns"] = [None]+r
     return returns
     
+def allReturns(prices = dict()):
+    return {ticker:pd.DataFrame(util.getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
