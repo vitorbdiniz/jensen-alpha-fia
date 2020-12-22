@@ -5,6 +5,7 @@ from busca_dados import get_prices
 from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco
+from alpha import jensens_alpha
 
 from matrixDB import get_tickers
 
@@ -18,17 +19,17 @@ def main():
 	#parâmetros adicionais
 	verbose = True
 	persist = True
-	test = False
+	test = True
 
 	#Algoritmo
 
 	#### Busca preços de ações
 
 	if test:
-		tickers = list(pd.read_csv("./data/ticker_list.csv")["tickers"])
+		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
-			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv")
+			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 	else:
 		tickers = "all"
 		prices = get_prices(tickers, start, end, verbose)
@@ -40,7 +41,7 @@ def main():
 
 	#### Avalia amostra de preços
 	if test:
-		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv")		
+		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, verbose)
 
@@ -56,8 +57,14 @@ def main():
 	#### Calcula fatores de risco
 	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, persist, verbose)
 	if persist:
-		fatores_risco.to_csv("./data/fatores_risco.csv")
-
+		if type(fatores_risco) == type(pd.DataFrame()):
+			fatores_risco.to_csv("./data/fatores_risco.csv")
+		else:
+			for fac in fatores_risco:
+				fatores_risco[fac].to_csv("./data/fator" + fac + ".csv")
+	fias_returns = pd.read_csv("./data/cotas_fias.csv")
+	alpha = jensens_alpha(fatores_risco, fias_returns)
+	
 	return
 
 
