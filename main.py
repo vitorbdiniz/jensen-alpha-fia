@@ -6,8 +6,10 @@ from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco
 from alpha import jensens_alpha
-
 from matrixDB import get_tickers
+
+import util
+
 
 def main():
 	#Parâmetros escolhidos
@@ -33,37 +35,40 @@ def main():
 	else:
 		tickers = "all"
 		prices = get_prices(tickers, start, end, verbose)
-
-	if persist:
-		pd.DataFrame({"tickers": list(prices.keys())}).to_csv("./data/ticker_list.csv")
-		for ticker in prices.keys():
-			prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
+		if persist:
+			if verbose:
+				print("-- Persistindo preços. Não interrompa a execução. --")
+			pd.DataFrame({"tickers": list(prices.keys())}).to_csv("./data/ticker_list.csv")
+			for ticker in prices.keys():
+				prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
+			if verbose:
+				print("-- OK --")
 
 	#### Avalia amostra de preços
 	if test:
 		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, verbose)
-
-
-	if persist:
-		amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
+		if persist:
+			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
 
 	#### Forma carteiras para cada período
-	carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
-	if persist:
-		carteiras.to_csv("./data/carteiras/carteiras.csv")
-	
+	if test:
+		carteiras = dict()
+		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
+		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
+		carteiras["liquidity"] = pd.read_csv("./data/carteiras/liquidity.csv", index_col=0)
+		carteiras["momentum"] = pd.read_csv("./data/carteiras/momentum.csv", index_col=0)
+	else:
+		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
+
 	#### Calcula fatores de risco
 	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, persist, verbose)
 	if persist:
-		if type(fatores_risco) == type(pd.DataFrame()):
-			fatores_risco.to_csv("./data/fatores_risco.csv")
-		else:
-			for fac in fatores_risco:
-				fatores_risco[fac].to_csv("./data/fator" + fac + ".csv")
-	fias_returns = pd.read_csv("./data/cotas_fias.csv")
-	alpha = jensens_alpha(fatores_risco, fias_returns)
+		fatores_risco.to_csv("./data/fatores_risco.csv")
+
+	#fias_returns = pd.read_csv("./data/cotas_fias.csv")
+	#alpha = jensens_alpha(fatores_risco, fias_returns)
 	
 	return
 
