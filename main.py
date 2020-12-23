@@ -7,6 +7,7 @@ from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco
 from alpha import jensens_alpha
 from matrixDB import get_tickers
+from fundos_investimento import process_fis
 
 import util
 
@@ -19,9 +20,10 @@ def main():
 	liquidez_min = 0
 	criterio_liquidez = 0.8
 	#parâmetros adicionais
+	
 	verbose = True
 	persist = True
-	test = True
+	test = False
 
 	#Algoritmo
 
@@ -63,12 +65,16 @@ def main():
 		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
 
 	#### Calcula fatores de risco
-	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-	if persist:
-		fatores_risco.to_csv("./data/fatores_risco.csv")
+	if test:
+		fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
+	else:
+		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
 
-	#fias_returns = pd.read_csv("./data/cotas_fias.csv")
-	#alpha = jensens_alpha(fatores_risco, fias_returns)
+	if persist:
+		fatores_risco.to_csv("./data/fatores/fatores_risco.csv")
+
+	#fis = process_fis(pd.read_csv("./data/cotas_fias.csv"))
+	#alpha = jensens_alpha(fatores_risco, fis, verbose)
 	
 	return
 
