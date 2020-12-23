@@ -63,7 +63,7 @@ def main():
 		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
 
 	#### Calcula fatores de risco
-	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, persist, verbose)
+	fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
 	if persist:
 		fatores_risco.to_csv("./data/fatores_risco.csv")
 
