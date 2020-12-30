@@ -279,7 +279,7 @@ def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbos
     return consolidada
 
 def classificar(lista, acima, abaixo):
-    aux = [x for x in lista if x != 0]
+    aux = [x for x in lista if x != 0 or x != None]
     if aux == []:
         lista = [0 for i in lista]
         med = 99999
