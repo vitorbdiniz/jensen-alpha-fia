@@ -25,6 +25,11 @@ def main():
 	persist = True
 	test = False
 
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("----------------------- INICIANDO PROCEDIMENTO DE BUSCA DE COTAÇÕES -----------------------")
+		print("-------------------------------------------------------------------------------------------")
+
 	#Algoritmo
 
 	#### Busca preços de ações
@@ -36,7 +41,7 @@ def main():
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 	else:
 		tickers = "all"
-		prices = get_prices(tickers, start, end, verbose)
+		prices = get_prices(tickers, start, end, verbose, get_from="influx")
 		if persist:
 			if verbose:
 				print("-- Persistindo preços. Não interrompa a execução. --")
@@ -45,14 +50,25 @@ def main():
 				prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
 			if verbose:
 				print("-- OK --")
-
+	return
 	#### Avalia amostra de preços
+
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("---------------------  INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA ---------------------")
+		print("-------------------------------------------------------------------------------------------")
+
 	if test:
 		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, verbose)
 		if persist:
 			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
+
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
+		print("-------------------------------------------------------------------------------------------")
 
 	#### Forma carteiras para cada período
 	if test:
@@ -65,6 +81,11 @@ def main():
 		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
 
 	#### Calcula fatores de risco
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("------------------ INICIANDO PROCEDIMENTO DE CÁLCULO DE FATORES DE RISCO ------------------")
+		print("-------------------------------------------------------------------------------------------")
+
 	if test:
 		fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
@@ -73,9 +94,19 @@ def main():
 	if persist:
 		fatores_risco.to_csv("./data/fatores/fatores_risco.csv")
 
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("------------------- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -------------------")
+		print("-------------------------------------------------------------------------------------------")
+
 	#fis = process_fis(pd.read_csv("./data/cotas_fias.csv"))
 	#alpha = jensens_alpha(fatores_risco, fis, verbose)
 	
+
+	if verbose:
+		print("-------------------------------------------------------------------------------------------")
+		print("---------------------------------------FIM-------------------------------------------------")
+		print("-------------------------------------------------------------------------------------------")
 	return
 
 
