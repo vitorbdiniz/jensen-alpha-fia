@@ -14,11 +14,19 @@ import util
 
 def main():
 	#Parâmetros escolhidos
+	##Tempo
 	start = "2010-01-01"
 	end = dt.date.today()
 	freq = "daily"
-	liquidez_min = 0
+
+	##Liquidez
+	liquidez_min = 0.1
 	criterio_liquidez = 0.8
+	media_periodo = 21
+
+	##Fonte
+	get_from="yahoo"
+
 	#parâmetros adicionais
 	
 	verbose = True
@@ -41,7 +49,7 @@ def main():
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 	else:
 		tickers = "all"
-		prices = get_prices(tickers, start, end, verbose, get_from="influx")
+		prices = get_prices(tickers, start, end, verbose, get_from)
 		if persist:
 			if verbose:
 				print("-- Persistindo preços. Não interrompa a execução. --")
@@ -50,7 +58,6 @@ def main():
 				prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
 			if verbose:
 				print("-- OK --")
-	return
 	#### Avalia amostra de preços
 
 	if verbose:
@@ -58,10 +65,11 @@ def main():
 		print("---------------------  INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 
+	print(prices["PETR4"])
 	if test:
 		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
 	else:
-		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, verbose)
+		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, verbose)
 		if persist:
 			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
 
