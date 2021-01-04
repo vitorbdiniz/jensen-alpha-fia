@@ -225,3 +225,23 @@ def getReturns(prices):
     
 def allReturns(prices = dict()):
     return {ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
+
+
+def moving_average(array, period):
+    '''
+        Calcula a média móvel para um período selecionado.
+    '''
+    array = pd.Series(array) if type(array) == type([]) else array
+
+    if period <= 1:
+        return array
+    MA = array.rolling(window=period).mean()
+    NaN = MA[MA.isna()]
+    MA = MA[MA.notna()]
+    sum_acc = 0
+    replaced_NaN = []
+    for i in NaN.index:
+        sum_acc += array.iloc[i]
+        replaced_NaN += [sum_acc/(i+1)]
+    NaN = pd.Series(replaced_NaN, index=NaN.index)
+    return NaN.append(MA)
