@@ -18,6 +18,7 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = Fal
     '''
     if tickers == "all":
         tickers = [ x.replace("$", "") for x in list(matrixDB.get_tickers(environment = "prod", verbose = verbose)[3])]
+        tickers = kill_units(tickers)
     elif str(tickers).lower() == "ibov" or str(tickers) == "^BVSP":
         tickers = ["^BVSP"]
     elif type(tickers) != type([]):
@@ -32,13 +33,11 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = Fal
         print("-------------------------------------------------------------------------------------------")
     return prices
 
-
+def kill_units(tickers):
+    return [t for t in tickers if len(t) == 5]
 
 def get_last_date(prices, start):
     return prices["PETR4"]["Date"].iloc[-1] if "PETR4" in prices.keys() else start
-
-
-
 
 def get_prices_from_yahoo(tickers, start, end, verbose):
     prices = dict()
@@ -56,6 +55,8 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
             if verbose:
                 print("------- 404 -> Not found")
     return prices
+
+
 
 def get_prices_from_influx(tickers, start, end, verbose):
     """
@@ -75,8 +76,11 @@ def get_prices_from_influx(tickers, start, end, verbose):
             i+=1
         id = get_stockid(stockid, ticker)
         data = {"Date":[],"Open":[], "High":[], "Low":[], "Close":[], "Volume":[], "Adj Close":[]}
-        for j in range(influx.shape[0]):
+        found = False
+        j = 0
+        while j < influx.shape[0]:
             if influx["stockid"].iloc[j] == id:
+                found = True
                 data["Date"].append(influx["Date"].iloc[j])
                 data["Open"].append(influx["Open"].iloc[j])
                 data["High"].append(influx["High"].iloc[j])
@@ -84,6 +88,9 @@ def get_prices_from_influx(tickers, start, end, verbose):
                 data["Close"].append(influx["Close"].iloc[j])
                 data["Adj Close"].append(influx["Close"].iloc[j])
                 data["Volume"].append(influx["Volume"].iloc[j])
+            elif found:
+                j = influx.shape[0]
+            j+=1
         prices[ticker] = pd.DataFrame(data, index=data["Date"]).drop(columns="Date")
 
     return prices
@@ -94,7 +101,7 @@ def get_stockid(stockid, ticker):
             return stockid["Id"].iloc[i]
     return -1
 
-def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False):
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False, persist = False):
     if verbose:
         print("Buscando série histórica da Selic")
     start = util.dateReformat(start)
@@ -104,6 +111,9 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False):
     selicBCB["valor"] = [ x/100 for x in util.reformatDecimalPoint(selicBCB["valor"], to=".")]
     selicBCB["data"] = util.datesReformat(selicBCB["data"], False)
     selic = pd.DataFrame({"valor":list(selicBCB["valor"])}, index = selicBCB["data"])
+
+    if persist:
+        selic.to_csv("./data/selic.csv")
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return selic

@@ -17,7 +17,6 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
 #    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
 
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
-    #carteiras = consolidaCarteiras(value, size, liquidity, momentum, quality, beta, dfUnico=True, verbose=verbose)
 
     if persist:
         liquidity.to_csv("./data/carteiras/liquidity.csv")
@@ -71,7 +70,7 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         print("Montando carteiras de tamanho")
     stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     i = 1
-    size = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
+    size = pd.DataFrame(index=amostra_aprovada.index, columns = amostra_aprovada.columns)
     for period in amostra_aprovada.index:
         if verbose:
             print(str(i)+". Montando carteiras de tamanho para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i))

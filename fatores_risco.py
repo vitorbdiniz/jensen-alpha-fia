@@ -47,7 +47,9 @@ def calculate_factor(carteiras, returns, factor_name, nome_carteira1, nome_carte
     factor = []
     dates = []
     i=1
-    for period in carteiras.index:
+    for i in range(1,len(carteiras.index)):
+        period = carteiras.index[i-1]
+        now = carteiras.index[i]
         if verbose:
             print(str(i)+". Calculando fator "+ factor_name +" para o periodo " + str(period) + " ---- restam "+str(len(carteiras.index)-i))
             i += 1
@@ -67,7 +69,7 @@ def calculate_factor(carteiras, returns, factor_name, nome_carteira1, nome_carte
             ret[0],n[0] = 0,1
 
         factor.append(ret[1]/n[1] - ret[0]/n[0])
-        dates.append(period)
+        dates.append(now)
     
     if verbose:
         print("-------------------------------------------------------------------------------------------")

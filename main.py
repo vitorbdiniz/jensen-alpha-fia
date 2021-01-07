@@ -1,6 +1,8 @@
+#bibliotecas Python
 import pandas as pd
 import datetime as dt
 
+#Comunicação com sistema
 from busca_dados import get_prices
 from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
@@ -20,8 +22,8 @@ def main():
 	freq = "daily"
 
 	##Liquidez
-	liquidez_min = 0.1
-	criterio_liquidez = 0.8
+	liquidez_min = 0.1 #elimina 10% dos volumes mais baixos
+	criterio_liquidez = 0.8 #liquidez em 80% dos períodos
 	media_periodo = 21
 
 	##Fonte
@@ -42,7 +44,7 @@ def main():
 
 	#### Busca preços de ações
 
-	if test:
+	if True:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
@@ -58,26 +60,24 @@ def main():
 				prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
 			if verbose:
 				print("-- OK --")
-	#### Avalia amostra de preços
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
 		print("---------------------  INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 
-	print(prices["PETR4"])
 	if test:
 		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, verbose)
 		if persist:
 			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
+	return
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
 		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
 		print("-------------------------------------------------------------------------------------------")
-
 	#### Forma carteiras para cada período
 	if test:
 		carteiras = dict()
@@ -107,9 +107,12 @@ def main():
 		print("------------------- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -------------------")
 		print("-------------------------------------------------------------------------------------------")
 
-	#fis = process_fis(pd.read_csv("./data/cotas_fias.csv"))
-	#alpha = jensens_alpha(fatores_risco, fis, verbose)
-	
+	fis = process_fis(pd.read_csv("./data/cotas_fias.csv"))
+	alphas = jensens_alpha(fatores_risco, fis, verbose)
+	if persist:
+		for fund in alphas:
+			fund.to_csv("./data/fatores/" + str(fund) + ".csv")
+
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")

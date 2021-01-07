@@ -50,15 +50,11 @@ def preprocess_dates(fundo, fatores):
     for i in range(fundo.shape[0]):
         if fundo["data"].iloc[i] in fatores.index:
             cotas += [fundo["variacao"].iloc[i]]
-            fator_mercado += [fatores.loc[fundo["data"].iloc[i]]
-                              ["fator_mercado"]]
-            fator_tamanho += [fatores.loc[fundo["data"].iloc[i]]
-                              ["fator_tamanho"]]
+            fator_mercado += [fatores.loc[fundo["data"].iloc[i]]["fator_mercado"]]
+            fator_tamanho += [fatores.loc[fundo["data"].iloc[i]]["fator_tamanho"]]
             fator_valor += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
-            fator_liquidez += [fatores.loc[fundo["data"].iloc[i]]
-                               ["fator_liquidez"]]
-            fator_momentum += [fatores.loc[fundo["data"].iloc[i]]
-                               ["fator_momentum"]]
+            fator_liquidez += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
+            fator_momentum += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
             dates += [fundo["data"].iloc[i]]
             nome += [fundo["fundo"].iloc[i]]
 
