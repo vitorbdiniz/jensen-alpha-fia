@@ -7,15 +7,12 @@ import util
 
 def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1,verbose = False):
     liquidez_minima = criterio_liquidez_minima(prices, start, end, freq, liquidez_min, criterion, media_periodo, verbose)
-    liquidez_minima.to_csv("Liquidez_Minima.csv")
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     maior_liquidez = criterio_maior_liquidez(prices, start, end, freq, verbose)
-    maior_liquidez.to_csv("Liquidez_Maior.csv")
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     listagem = criterio_listagem(prices, start, end, freq, verbose)
-    listagem.to_csv("listagem.csv")
     if verbose:
         print("-------------------------------------------------------------------------------------------")
 

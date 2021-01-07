@@ -44,7 +44,7 @@ def main():
 
 	#### Busca preços de ações
 
-	if True:
+	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
