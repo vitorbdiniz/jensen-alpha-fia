@@ -88,8 +88,14 @@ def getUtilDays(start, end):
     '''
     start = dateReformat(start)
     end = dateReformat(end)
-    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
-    return list(datesReformat(pd.read_csv(url, sep=";")["data"], toUsual=False))
+    try:
+        url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
+        selic = pd.read_csv(url, sep=";")
+        util = list(datesReformat(selic["data"], toUsual=False))
+    except:
+        util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False))
+
+    return util
 
 
 def count_quarter_days(start, end):

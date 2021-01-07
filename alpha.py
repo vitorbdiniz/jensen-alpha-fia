@@ -20,6 +20,9 @@ def jensens_alpha(risk_factors, portfolios_returns, verbose=False):
     return alphas
 
 def get_alpha(expected, actual):
+    """
+        #TODO
+    """
     alphas = []
     for i in range(len(expected)):
         alphas += [ actual[i] - expected[i] ]

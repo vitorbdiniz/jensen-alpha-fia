@@ -107,7 +107,12 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False, pe
     start = util.dateReformat(start)
     end = util.dateReformat(end)
     url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
-    selicBCB = pd.read_csv(url, sep=";")
+    try:
+        selicBCB = pd.read_csv(url, sep=";")
+        if persist:
+            selicBCB.to_csv("./data/selic.csv", sep=";")
+    except:
+        selicBCB = pd.read_csv("./data/selic.csv", sep=";")
     selicBCB["valor"] = [ x/100 for x in util.reformatDecimalPoint(selicBCB["valor"], to=".")]
     selicBCB["data"] = util.datesReformat(selicBCB["data"], False)
     selic = pd.DataFrame({"valor":list(selicBCB["valor"])}, index = selicBCB["data"])

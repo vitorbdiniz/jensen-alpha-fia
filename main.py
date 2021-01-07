@@ -44,7 +44,7 @@ def main():
 
 	#### Busca preços de ações
 
-	if test:
+	if True:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
@@ -72,7 +72,6 @@ def main():
 		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, verbose)
 		if persist:
 			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
-	return
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
