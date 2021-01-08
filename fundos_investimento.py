@@ -1,6 +1,6 @@
 import pandas as pd
 
-def process_fis(fundos):
+def preprocess_fis(fundos):
     '''
         Recebe um DataFrame com retornos de fundos e retorna um dicionário de fundos
         chaves = codigos
@@ -13,3 +13,4 @@ def process_fis(fundos):
             fis[fundos["codigo"].iloc[i]] = pd.DataFrame()
         fis[fundos["codigo"].iloc[i]] = fis[fundos["codigo"].iloc[i]].append(df, ignore_index=True)
     return fis
+
