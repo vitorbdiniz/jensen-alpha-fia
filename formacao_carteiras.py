@@ -13,9 +13,9 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
     value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, start, end, verbose)
+    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 3, verbose=verbose)
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
-    #beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico=False, verbose=verbose)
     return carteiras
 
 
@@ -164,7 +164,7 @@ def carteiraQuality(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
     #TODO
     return
 
-def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), years = 5, verbose=False):
+def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
     '''
@@ -173,7 +173,7 @@ def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         print("Montando carteiras de beta")
         print("- Calculando betas necessários")
 
-    betas = getBeta(prices, amostra_aprovada, start, end)
+    betas = getBeta(prices, start, end)
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -186,45 +186,57 @@ def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
                 b.append( betas[ticker]["beta"].loc[period] )
             else:
                 b.append(0)
-        carteira_beta.loc[period] = classificar(betas, "big", "small")
+        carteira_beta.loc[period] = classificar(betas, "high_beta", "low_beta")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
 
     return carteira_beta
 
-def getBeta(prices, start= dt.date.today(), end= dt.date.today(), verbose=False):
+def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
     if verbose:
-        print("Calculando retornos para o beta")
+        print("Calculando retornos necessários")
     ibov = util.getReturns(busca_dados.get_prices("ibov", start, end)["^BVSP"])
+    
+    utilDays = util.getUtilDays(start, end)
+
     returns = util.allReturns(prices)
-    betas_result = dict()
+    betas_result = pd.DataFrame(index=ibov.index)
 
     i = 1
     for ticker in returns.keys():
-        betas = []
-        equity = pd.DataFrame()
         if verbose:
             print(str(i)+". Calculando beta de " + ticker + " ---- restam " + str(len(returns.keys()) - i))
             i += 1
-        for i in range(len(returns[ticker].index)):
-            if i < 21:
+        check_returns = validate_returns_dates(returns[ticker], ibov)
+        dates = set(check_returns.index)
+        betas = []
+        j = 0
+        for d in utilDays:
+            if j < 21 or d not in dates:
                 betas.append(0)
                 continue
-            if i- 21 < 500: #2y para 250 dias úteis:
-                equity = returns[ticker].iloc[0:i]
+            elif j < 500: #2y para 250 dias úteis:
+                stock = check_returns["stock"].iloc[0:j]
+                benchmark = check_returns["benchmark"].iloc[0:j]
 
             else:
-                equity = returns[ticker].iloc[i-500:i]
+                stock = check_returns["stock"].iloc[j-500:j]
+                benchmark = check_returns["benchmark"].iloc[j-500:j]
+            b = beta(Rm=benchmark, Ra=stock)
+            betas.append(b)
+            j+=1
 
-            equity["market"] = ibov["returns"].loc[equity.index[0]:len(equity.index)]
-            betas.append(beta(equity["market"], equity["returns"]))
-
-
-        betas_result[ticker] = pd.DataFrame(betas, index = returns[ticker]["returns"])
-    
+        betas_result[ticker] = betas
     return betas_result
 
+def validate_returns_dates(asset, benchmark):
+    result = pd.DataFrame(columns=["stock", "benchmark"])
+    benchmark_dates = set(benchmark.index)
+    for d in asset.index:
+        if d in benchmark_dates:
+            result.loc[d] = [asset["returns"], benchmark["returns"]]
+    return result
 
 
 def beta(Rm, Ra):
@@ -239,7 +251,7 @@ def beta(Rm, Ra):
 
 
 
-def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbose = False):
+def consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico = False, verbose = False):
     if verbose:
         print("Consolidação das carteiras")
 
@@ -263,7 +275,7 @@ def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbos
         consolidada["liquidity"] = liquidity
         consolidada["momentum"]  = momentum
         #consolidada["quality"]   = quality
-        #consolidada["beta"]      = beta
+        consolidada["beta"]      = beta
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return consolidada
