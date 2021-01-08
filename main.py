@@ -9,7 +9,7 @@ from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco
 from alpha import jensens_alpha
 from matrixDB import get_tickers
-from fundos_investimento import process_fis
+from fundos_investimento import preprocess_fis
 
 import util
 
@@ -33,7 +33,7 @@ def main():
 	
 	verbose = True
 	persist = True
-	test = False
+	test = True
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
@@ -44,7 +44,7 @@ def main():
 
 	#### Busca preços de ações
 
-	if True:
+	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
@@ -78,14 +78,17 @@ def main():
 		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 	#### Forma carteiras para cada período
-	if test:
+	if False:
 		carteiras = dict()
 		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
 		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
 		carteiras["liquidity"] = pd.read_csv("./data/carteiras/liquidity.csv", index_col=0)
 		carteiras["momentum"] = pd.read_csv("./data/carteiras/momentum.csv", index_col=0)
 	else:
-		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose, persist)
+		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose)
+		if persist:
+			for carteira in carteiras:
+				carteiras[carteira].to_csv("./data/carteiras/"+ carteira +".csv")
 
 	#### Calcula fatores de risco
 	if verbose:
@@ -106,11 +109,10 @@ def main():
 		print("------------------- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -------------------")
 		print("-------------------------------------------------------------------------------------------")
 
-	fis = process_fis(pd.read_csv("./data/cotas_fias.csv"))
+	fis = preprocess_fis(pd.read_csv("./data/cotas_fias.csv"))
 	alphas = jensens_alpha(fatores_risco, fis, verbose)
 	if persist:
-		for fund in alphas:
-			fund.to_csv("./data/fatores/" + str(fund) + ".csv")
+		alphas.to_csv("./data/alphas/alphas.csv")
 
 
 	if verbose:
