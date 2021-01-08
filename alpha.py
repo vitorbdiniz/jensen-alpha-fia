@@ -1,46 +1,51 @@
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+
+import fundos_investimento as FI
 import util
 
-def jensens_alpha(risk_factors, portfolios_returns, verbose=False):
+def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"], verbose=False):
+    """
+        Calcula o Alfa de Jensen para os fundos fornecidos, a partir dos fatores previamente calculados
+
+        Retorna um pandas.DataFrame com colunas: "Nome", "alfa" e os betas solicitados
+    """
     if verbose:
         print("Pré-processando dados de fundos de investimento")
-    alphas = dict()
-    fis = preprocess_fis(portfolios_returns)
-    i=1
+    columns = ["Nome", "alfa"] + betas_to_be_calculated(fatores)
+    alphas = pd.DataFrame(columns = columns)
+    fis = FI.preprocess_fis(portfolios_returns)
+    i=0
     for each_fund in fis:
         if verbose:
             print(str(i)+". Calculando alfa do Fundo " + fis[each_fund]["fundo"].iloc[0] + " ---- faltam "+str(len(fis)-i))
-            i+=1
         data = preprocess_dates(fis[each_fund], risk_factors)
-        expected = expected_returns(data)
-        alpha = get_alpha(expected=expected, actual=data["cotas"])
-        alphas[each_fund] = alpha
+        alphas.loc[i] = get_factor_exposition(data, fatores, each_fund)
+        i+=1
+
     return alphas
 
-def get_alpha(expected, actual):
+def get_factor_exposition(data, fatores, fund):
     """
-        #TODO
-    """
-    alphas = []
-    for i in range(len(expected)):
-        alphas += [ actual[i] - expected[i] ]
-    return alphas
+        Realiza a regressão com base nos retornos diários do portfólio e nos fatores de risco calculados
 
-def preprocess_fis(fundos):
-    '''
-        Recebe um DataFrame com retornos de fundos e retorna um dicionário de fundos
-        chaves = codigos
-        valores = DataFrames
-    '''
-    fis = dict()
-    for i in range(fundos.shape[0]):
-        df = fundos.iloc[i]
-        if fundos["codigo"].iloc[i] not in fis:
-            fis[fundos["codigo"].iloc[i]] = pd.DataFrame()
-        fis[fundos["codigo"].iloc[i]] = fis[fundos["codigo"].iloc[i]].append(df, ignore_index=True)
-    return fis
+        retorna uma lista: nome_fundo, alfa_fundo, betas_fundo
+    """
+    X = data[fatores]
+    y = data[["cotas"]]
+    regression = LinearRegression().fit(X, y)
+    betas = list(regression.coef_[0])
+    alpha = regression.intercept_[0]
+    return [fund] + [alpha] + betas
+
+
+def betas_to_be_calculated(fatores):
+    betas = []
+    for f in fatores:
+        betas.append( "beta_" + str(f).split("_")[1])
+    return betas
+
 
 
 def preprocess_dates(fundo, fatores):
@@ -58,24 +63,13 @@ def preprocess_dates(fundo, fatores):
             fator_valor += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
             fator_liquidez += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
             fator_momentum += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
+            #fator_beta += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
+            #fator_qualidade += [fatores.loc[fundo["data"].iloc[i]]["fator_qualidade"]]
+
+
             dates += [fundo["data"].iloc[i]]
             nome += [fundo["fundo"].iloc[i]]
 
     result = pd.DataFrame({"dates":dates,"fundo":nome, "cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum})
     return result.drop(labels=0, axis="index")
-
-def expected_returns(data):
-    """
-        Calcula os retornos esperados para os fatores dados
-    """
-    X = data[["fator_mercado"	,"fator_tamanho"	,"fator_valor"	,"fator_liquidez"	,"fator_momentum"]]
-    y = data[["cotas"]]
-    pricing_model = LinearRegression().fit(X,y)
-
-    R = pricing_model.predict(X)
-    expected = []
-    for list_ in R:
-        for e in list_:
-            expected += [e]
-    return expected
 
