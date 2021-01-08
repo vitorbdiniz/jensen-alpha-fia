@@ -7,7 +7,7 @@ import busca_dados
 import matrixDB
 import util
 
-def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False, persist=False):
+def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
     size      = carteiraSize(prices, amostra_aprovada, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
@@ -17,14 +17,6 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
 #    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
 
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
-
-    if persist:
-        liquidity.to_csv("./data/carteiras/liquidity.csv")
-        value.to_csv("./data/carteiras/value.csv")
-        size.to_csv("./data/carteiras/size.csv")
-        momentum.to_csv("./data/carteiras/momentum.csv")
-#        quality.to_csv("./data/carteiras/quality.csv")
-#        beta.to_csv("./data/carteiras/beta.csv")
     return carteiras
 
 
