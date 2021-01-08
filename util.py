@@ -224,9 +224,8 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
     return index, days_number
 
 def getReturns(prices):
-    returns = pd.DataFrame(index=prices.index)
     r = [prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
-    returns["returns"] = [None]+r
+    returns = pd.DataFrame({"returns":[None]+r}, index=prices.index)
     return returns
     
 def allReturns(prices = dict()):
