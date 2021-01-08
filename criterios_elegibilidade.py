@@ -5,7 +5,7 @@ import numpy as np
 import util
 
 
-def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1,verbose = False):
+def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1,persist=False, verbose = False):
     liquidez_minima = criterio_liquidez_minima(prices, start, end, freq, liquidez_min, criterion, media_periodo, verbose)
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -16,13 +16,23 @@ def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today
     if verbose:
         print("-------------------------------------------------------------------------------------------")
 
+    criterios = intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose)
+    if persist:
+        liquidez_minima.to_csv("./data/criterios/criterio_liquidez_minima.csv")
+        maior_liquidez.to_csv("./data/criterios/criterio_maior_liquidez.csv")
+        listagem.to_csv("./data/criterios/criterio_listagem.csv")
+
+    return criterios
+
+
+def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=False):
     intersecao_criterios = pd.DataFrame(index=listagem.index)
 
     i = 1
     for col in listagem.columns:
         aux = []
         if verbose:
-            print(str(i)+". Calculando interseção de critérios de "+ col + " ---- faltam "+str(len(prices)-i))
+            print(str(i)+". Calculando interseção de critérios de "+ col + " ---- faltam "+str(len(listagem.columns)-i))
             i+=1
         for index in liquidez_minima.index:
             aux.append(liquidez_minima[col].loc[index] and maior_liquidez[col].loc[index] and listagem[col].loc[index])

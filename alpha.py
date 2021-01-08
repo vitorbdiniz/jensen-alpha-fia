@@ -28,7 +28,7 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
 
 def get_factor_exposition(data, fatores, fund):
     """
-        Realiza a regressão com base nos retornos diários do portfólio e nos fatores de risco calculados
+        Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
         retorna uma lista: nome_fundo, alfa_fundo, betas_fundo
     """

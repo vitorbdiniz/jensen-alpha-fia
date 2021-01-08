@@ -33,7 +33,7 @@ def main():
 	
 	verbose = True
 	persist = True
-	test = True
+	test = False
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
@@ -67,18 +67,18 @@ def main():
 		print("-------------------------------------------------------------------------------------------")
 
 	if test:
-		amostra_aprovada = pd.read_csv("./data/amostra_aprovada.csv", index_col=0)		
+		amostra_aprovada = pd.read_csv("./data/criterios/amostra_aprovada.csv", index_col=0)		
 	else:
-		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, verbose)
+		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, persist, verbose)
 		if persist:
-			amostra_aprovada.to_csv("./data/amostra_aprovada.csv")
+			amostra_aprovada.to_csv("./data/criterios/amostra_aprovada.csv")
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
 		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 	#### Forma carteiras para cada período
-	if False:
+	if test:
 		carteiras = dict()
 		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
 		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
@@ -87,9 +87,12 @@ def main():
 	else:
 		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose)
 		if persist:
+			if verbose:
+				print("-- Persistindo carteiras --")
 			for carteira in carteiras:
 				carteiras[carteira].to_csv("./data/carteiras/"+ carteira +".csv")
-
+			if verbose:
+				print("OK")
 	#### Calcula fatores de risco
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
@@ -100,10 +103,12 @@ def main():
 		fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
 		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-
-	if persist:
-		fatores_risco.to_csv("./data/fatores/fatores_risco.csv")
-
+		if persist:
+			if verbose:
+				print("Persistindo fatores de risco")
+			fatores_risco.to_csv("./data/fatores/fatores_risco.csv")
+			if verbose:
+				print("OK")
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
 		print("------------------- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -------------------")

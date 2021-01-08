@@ -13,9 +13,8 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
     value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, start, end, verbose)
-#    quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
-#    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
-
+    #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
+    #beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
     return carteiras
 
@@ -270,7 +269,7 @@ def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbos
     return consolidada
 
 def classificar(lista, acima, abaixo):
-    aux = [x for x in lista if x != 0 or x != None]
+    aux = [x for x in lista if (x != 0 and x != None and x != "None")]
     if aux == []:
         lista = [0 for i in lista]
         med = 99999
@@ -278,9 +277,9 @@ def classificar(lista, acima, abaixo):
         med = st.median(aux)
     result = []
     for each in lista:
-        if each >= med:
+        if each != None and each >= med:
             result.append(acima)
-        elif each != 0:
+        elif each != None and each != 0:
             result.append(abaixo)
         else:
             result.append(None)
