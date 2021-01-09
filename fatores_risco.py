@@ -4,6 +4,7 @@ import pandas as pd
 import util
 
 def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= str(dt.date.today()), verbose=False):
+    
     if verbose:
         print("-------------------------------------------------------------------------------------------")
 
@@ -67,7 +68,6 @@ def calculate_factor(carteiras, returns, factor_name, nome_carteira1, nome_carte
             ret[1],n[1] = 0,1
         if n[0] == 0:
             ret[0],n[0] = 0,1
-
         factor.append(ret[1]/n[1] - ret[0]/n[0])
         dates.append(now)
     

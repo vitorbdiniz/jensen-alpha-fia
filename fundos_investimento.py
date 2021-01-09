@@ -7,7 +7,7 @@ def preprocess_fis(fundos):
         valores = DataFrames
     '''
     fis = dict()
-    for i in range(fundos.shape[0]):
+    for i in range(len(fundos["codigo"])):
         df = fundos.iloc[i]
         if fundos["codigo"].iloc[i] not in fis:
             fis[fundos["codigo"].iloc[i]] = pd.DataFrame()

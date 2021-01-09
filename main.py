@@ -115,7 +115,7 @@ def main():
 		print("-------------------------------------------------------------------------------------------")
 
 	fis = preprocess_fis(pd.read_csv("./data/cotas_fias.csv"))
-	alphas = jensens_alpha(fatores_risco, fis, verbose)
+	alphas = jensens_alpha(fatores_risco, fis, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"],verbose=verbose)
 	if persist:
 		alphas.to_csv("./data/alphas/alphas.csv")
 
