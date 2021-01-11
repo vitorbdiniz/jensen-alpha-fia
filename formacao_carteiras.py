@@ -13,7 +13,8 @@ def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
     value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, start, end, verbose)
-    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 3, verbose=verbose)
+    #beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 3, verbose=verbose)
+    beta = pd.DataFrame()
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico=False, verbose=verbose)
     return carteiras
