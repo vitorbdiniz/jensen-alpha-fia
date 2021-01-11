@@ -4,7 +4,7 @@ import sqlalchemy as sql
 import pandas as pd
 import numpy as np
 from os.path import realpath
-
+from env import define_matrix_env
 
 class SQLError(RuntimeError):
     def __init__(self, expression, message):
@@ -15,16 +15,7 @@ class SQLError(RuntimeError):
 connecting to TC-Matrix's databank
 '''
 def connect_Matrix(environment = "prod"):
-    if environment == "prod":
-        host = "10.55.192.17"
-        user = "vitor.diniz"
-        password = "-uV3Fg*yA^xh?2VR&tAu6LH"
-        dbname = "tc_matrix"
-    elif environment == "hml":
-        host = "10.249.240.10"
-        user = "mmuser"
-        password = "TradersPetr4"
-        dbname = "tc_matrix"
+    host, user, password, dbname = define_matrix_env(environment)
     database = pymysql.connect(host=host, user=user, password=password, db=dbname)
     return database.cursor()
 
