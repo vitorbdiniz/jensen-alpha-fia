@@ -44,7 +44,7 @@ def main():
 
 	#### Busca preços de ações
 
-	if True:
+	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
@@ -114,7 +114,8 @@ def main():
 		print("------------------- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -------------------")
 		print("-------------------------------------------------------------------------------------------")
 
-	fis = preprocess_fis(pd.read_csv("./data/cotas_fias.csv"))
+	fundos = pd.read_csv("./data/cotas_fias.csv")
+	fis = preprocess_fis(fundos, verbose=verbose)
 	alphas = jensens_alpha(fatores_risco, fis, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"],verbose=verbose)
 	if persist:
 		alphas.to_csv("./data/alphas/alphas.csv")
