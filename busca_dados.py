@@ -51,9 +51,10 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
                 prices[t] = web.get_data_yahoo(t+".SA", start, end)
             else:
                 prices[t] = web.get_data_yahoo(t, start, end)
+            prices[t].index = [str(x.date()) for x in prices[t].index]
         except:
             if verbose:
-                print("------- 404 -> Not found")
+                print("------- Ação não encontrada")
     return prices
 
 
