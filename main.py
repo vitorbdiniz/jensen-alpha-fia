@@ -22,7 +22,7 @@ def main():
 	freq = "daily"
 
 	##Liquidez
-	liquidez_min = 0.1 #elimina 10% dos volumes mais baixos
+	liquidez_min = 0.1 #elimina 
 	criterio_liquidez = 0.8 #liquidez em 80% dos períodos
 	media_periodo = 21
 
@@ -30,7 +30,7 @@ def main():
 	get_from="yahoo"
 
 	#parâmetros adicionais
-	
+	quantile = 0.2 
 	verbose = True
 	persist = True
 	test = False
@@ -85,7 +85,7 @@ def main():
 		carteiras["liquidity"] = pd.read_csv("./data/carteiras/liquidity.csv", index_col=0)
 		carteiras["momentum"] = pd.read_csv("./data/carteiras/momentum.csv", index_col=0)
 	else:
-		carteiras = forma_carteiras(prices, amostra_aprovada, start, end, freq, verbose)
+		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, freq, verbose)
 		if persist:
 			if verbose:
 				print("-- Persistindo carteiras --")

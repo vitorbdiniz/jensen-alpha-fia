@@ -14,7 +14,7 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
     """
     if verbose:
         print("Calculando alfas dos fundos de investimento")
-    columns = ["codigo","nome"] + betas_to_be_calculated(fatores) + ["alfa", "estatistica_t", "pvalor"]
+    columns = ["codigo","nome"] + betas_to_be_calculated(fatores) + ["alfa", "tvalor", "pvalor"]
     alphas = pd.DataFrame(columns = columns)
     if type(portfolios_returns) == type(pd.DataFrame()):
         portfolios_returns = FI.preprocess_fis(portfolios_returns)
