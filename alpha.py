@@ -69,7 +69,7 @@ def preprocess_dates(fundo, fatores):
             fator_valor += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
             fator_liquidez += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
             fator_momentum += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
-            #fator_beta += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
+            fator_beta += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
             #fator_qualidade += [fatores.loc[fundo["data"].iloc[i]]["fator_qualidade"]]
 
 

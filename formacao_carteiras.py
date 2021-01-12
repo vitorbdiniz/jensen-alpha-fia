@@ -171,7 +171,8 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
         print("Montando carteiras de beta")
 
     betas = getBeta(prices, amostra_aprovada,start, end, verbose)
-    #betas.to_csv("./data/alphas/betas.csv")
+    #betas = pd.read_csv("./data/alphas/betas.csv")
+    betas.to_csv("./data/alphas/betas.csv")
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -180,11 +181,11 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
             i += 1
         b = []
         for ticker in amostra_aprovada.columns:
-            if amostra_aprovada[ticker].loc[period] and betas[ticker]:
-                b.append( betas[ticker]["beta"].loc[period] )
+            if period in betas.index and amostra_aprovada[ticker].loc[period] and betas[ticker].loc[period] != None:
+                b.append( betas[ticker].loc[period] )
             else:
-                b.append(0)
-        carteira_beta.loc[period] = classificar(betas, quantile, "high_beta", "low_beta")
+                b.append(None)
+        carteira_beta.loc[period] = classificar(b, quantile, "high_beta", "low_beta")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -285,7 +286,6 @@ def classificar(lista, q, acima, abaixo):
     aux = [x for x in lista if (x != 0 and x != None)]
     if aux == []:
         return [None for i in lista]   
-    
     inf = np.quantile(aux, q)
     sup = np.quantile(aux, 1-q)
     result = []
