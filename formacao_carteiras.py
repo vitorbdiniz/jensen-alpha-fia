@@ -7,31 +7,22 @@ import busca_dados
 import matrixDB
 import util
 
-def forma_carteiras(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False, persist=False):
+def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    size      = carteiraSize(prices, amostra_aprovada, start, end, freq,verbose)
-    value     = carteiraValue(prices, amostra_aprovada, start, end, freq, verbose)
-    liquidity = carteiraLiquidity(prices, amostra_aprovada, verbose)
-    momentum  = carteiraMomentum(prices, amostra_aprovada, start, end, verbose)
-#    quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
-#    beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 5, verbose=verbose)       
-
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
-    #carteiras = consolidaCarteiras(value, size, liquidity, momentum, quality, beta, dfUnico=True, verbose=verbose)
-
-    if persist:
-        liquidity.to_csv("./data/carteiras/liquidity.csv")
-        value.to_csv("./data/carteiras/value.csv")
-        size.to_csv("./data/carteiras/size.csv")
-        momentum.to_csv("./data/carteiras/momentum.csv")
-#        quality.to_csv("./data/carteiras/quality.csv")
-#        beta.to_csv("./data/carteiras/beta.csv")
+    size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
+    value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
+    liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
+    momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
+    #beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 3, verbose=verbose)
+    beta = pd.DataFrame()
+    #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico=False, verbose=verbose)
     return carteiras
 
 
 
 
-def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
+def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high" ou "low" de acordo com o múltiplo book-to-market (BM)
     '''
@@ -55,7 +46,7 @@ def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date
                     BM.append( float(prices[ticker]["Adj Close"].loc[period]) / VPA )
             else:
                 BM.append(0)
-        value.loc[period] = classificar(BM, "high", "low")
+        value.loc[period] = classificar(BM, quantile, "high", "low")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -63,7 +54,7 @@ def carteiraValue(prices, amostra_aprovada, start= dt.date.today(), end= dt.date
     return value
 
 
-def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), freq = "daily",verbose=False):
+def carteiraSize(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq = "daily",verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "big" ou "small" de acordo com o seu valor de mercado
     '''
@@ -71,7 +62,7 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         print("Montando carteiras de tamanho")
     stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     i = 1
-    size = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
+    size = pd.DataFrame(index=amostra_aprovada.index, columns = amostra_aprovada.columns)
     for period in amostra_aprovada.index:
         if verbose:
             print(str(i)+". Montando carteiras de tamanho para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i))
@@ -86,13 +77,13 @@ def carteiraSize(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
                     market_cap.append( float(prices[ticker]["Adj Close"].loc[period]) * N )
             else:
                 market_cap.append(0)
-        size.loc[period] = classificar(market_cap, "big", "small")
+        size.loc[period] = classificar(market_cap, quantile, "big", "small")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return size
 
-def carteiraLiquidity(prices, amostra_aprovada, verbose=False):
+def carteiraLiquidity(prices, amostra_aprovada, quantile, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "liquid" ou "iliquid" de acordo com a sua liquidez
     '''
@@ -111,7 +102,7 @@ def carteiraLiquidity(prices, amostra_aprovada, verbose=False):
                 liquidez_periodo.append(prices[ticker]["Volume"].loc[periodo])
             else:
                 liquidez_periodo.append(0)
-        liquidity.loc[periodo] = classificar(liquidez_periodo, "liquid", "iliquid")
+        liquidity.loc[periodo] = classificar(liquidez_periodo, quantile, "liquid", "iliquid")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -120,7 +111,7 @@ def carteiraLiquidity(prices, amostra_aprovada, verbose=False):
 
 
     
-def carteiraMomentum(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
+def carteiraMomentum(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "winner" ou "loser" de acordo com seu retorno
     '''
@@ -142,7 +133,7 @@ def carteiraMomentum(prices, amostra_aprovada, start= dt.date.today(), end= dt.d
                 rentabilidade_periodo.append(returns[ticker]["returns"].loc[periodo])
             else:
                 rentabilidade_periodo.append(0)
-        momentum.loc[periodo] = classificar(rentabilidade_periodo, "winner", "loser")
+        momentum.loc[periodo] = classificar(rentabilidade_periodo, quantile, "winner", "loser")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -152,7 +143,7 @@ def carteiraMomentum(prices, amostra_aprovada, start= dt.date.today(), end= dt.d
 
 
 
-def carteiraQuality(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
+def carteiraQuality(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "quality" ou "junk" de acordo com ... (Ver Buffett's Alpha)
     '''
@@ -174,7 +165,7 @@ def carteiraQuality(prices, amostra_aprovada, start= dt.date.today(), end= dt.da
     #TODO
     return
 
-def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), years = 5, verbose=False):
+def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
     '''
@@ -183,7 +174,7 @@ def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
         print("Montando carteiras de beta")
         print("- Calculando betas necessários")
 
-    betas = getBeta(prices, amostra_aprovada, start, end)
+    betas = getBeta(prices, start, end)
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -196,45 +187,57 @@ def carteiraBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.
                 b.append( betas[ticker]["beta"].loc[period] )
             else:
                 b.append(0)
-        carteira_beta.loc[period] = classificar(betas, "big", "small")
+        carteira_beta.loc[period] = classificar(betas, quantile, "high_beta", "low_beta")
 
     if verbose:
         print("-------------------------------------------------------------------------------------------")
 
     return carteira_beta
 
-def getBeta(prices, start= dt.date.today(), end= dt.date.today(), verbose=False):
+def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
     if verbose:
-        print("Calculando retornos para o beta")
+        print("Calculando retornos necessários")
     ibov = util.getReturns(busca_dados.get_prices("ibov", start, end)["^BVSP"])
+    
+    utilDays = util.getUtilDays(start, end)
+
     returns = util.allReturns(prices)
-    betas_result = dict()
+    betas_result = pd.DataFrame(index=ibov.index)
 
     i = 1
     for ticker in returns.keys():
-        betas = []
-        equity = pd.DataFrame()
         if verbose:
             print(str(i)+". Calculando beta de " + ticker + " ---- restam " + str(len(returns.keys()) - i))
             i += 1
-        for i in range(len(returns[ticker].index)):
-            if i < 21:
+        check_returns = validate_returns_dates(returns[ticker], ibov)
+        dates = set(check_returns.index)
+        betas = []
+        j = 0
+        for d in utilDays:
+            if j < 21 or d not in dates:
                 betas.append(0)
                 continue
-            if i- 21 < 500: #2y para 250 dias úteis:
-                equity = returns[ticker].iloc[0:i]
+            elif j < 500: #2y para 250 dias úteis:
+                stock = check_returns["stock"].iloc[0:j]
+                benchmark = check_returns["benchmark"].iloc[0:j]
 
             else:
-                equity = returns[ticker].iloc[i-500:i]
+                stock = check_returns["stock"].iloc[j-500:j]
+                benchmark = check_returns["benchmark"].iloc[j-500:j]
+            b = beta(Rm=benchmark, Ra=stock)
+            betas.append(b)
+            j+=1
 
-            equity["market"] = ibov["returns"].loc[equity.index[0]:len(equity.index)]
-            betas.append(beta(equity["market"], equity["returns"]))
-
-
-        betas_result[ticker] = pd.DataFrame(betas, index = returns[ticker]["returns"])
-    
+        betas_result[ticker] = betas
     return betas_result
 
+def validate_returns_dates(asset, benchmark):
+    result = pd.DataFrame(columns=["stock", "benchmark"])
+    benchmark_dates = set(benchmark.index)
+    for d in asset.index:
+        if d in benchmark_dates:
+            result.loc[d] = [asset["returns"], benchmark["returns"]]
+    return result
 
 
 def beta(Rm, Ra):
@@ -249,7 +252,7 @@ def beta(Rm, Ra):
 
 
 
-def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbose = False):
+def consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico = False, verbose = False):
     if verbose:
         print("Consolidação das carteiras")
 
@@ -273,23 +276,29 @@ def consolidaCarteiras(value, size, liquidity, momentum, dfUnico = False, verbos
         consolidada["liquidity"] = liquidity
         consolidada["momentum"]  = momentum
         #consolidada["quality"]   = quality
-        #consolidada["beta"]      = beta
+        consolidada["beta"]      = beta
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return consolidada
 
-def classificar(lista, acima, abaixo):
-    aux = [x for x in lista if x != 0]
+def classificar(lista, q, acima, abaixo):
+    """
+
+        0 < q <= 0.5
+    """
+    aux = [x for x in lista if (x != 0 and x != None)]
     if aux == []:
         lista = [0 for i in lista]
         med = 99999
     else:
         med = st.median(aux)
+        inf = np.quantile(aux, q)
+        sup = np.quantile(aux, 1-q)
     result = []
     for each in lista:
-        if each >= med:
+        if each != None and each != 0 and each >= sup:
             result.append(acima)
-        elif each != 0:
+        elif each != None and each != 0 and each <= inf:
             result.append(abaixo)
         else:
             result.append(None)

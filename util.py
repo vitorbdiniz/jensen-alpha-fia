@@ -88,8 +88,14 @@ def getUtilDays(start, end):
     '''
     start = dateReformat(start)
     end = dateReformat(end)
-    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
-    return list(datesReformat(pd.read_csv(url, sep=";")["data"], toUsual=False))
+    try:
+        url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
+        selic = pd.read_csv(url, sep=";")
+        util = list(datesReformat(selic["data"], toUsual=False))
+    except:
+        util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False))
+
+    return util
 
 
 def count_quarter_days(start, end):
@@ -218,10 +224,29 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
     return index, days_number
 
 def getReturns(prices):
-    returns = pd.DataFrame(index=prices.index)
     r = [prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
-    returns["returns"] = [None]+r
+    returns = pd.DataFrame({"returns":[None]+r}, index=prices.index)
     return returns
     
 def allReturns(prices = dict()):
     return {ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
+
+
+def moving_average(array, period):
+    '''
+        Calcula a média móvel para um período selecionado.
+    '''
+    array = pd.Series(array) if type(array) == type([]) else array
+
+    if period <= 1:
+        return array
+    MA = array.rolling(window=period).mean()
+    NaN = MA[MA.isna()]
+    MA = MA[MA.notna()]
+    sum_acc = 0
+    replaced_NaN = []
+    for i in NaN.index:
+        sum_acc += array.iloc[i]
+        replaced_NaN += [sum_acc/(i+1)]
+    NaN = pd.Series(replaced_NaN, index=NaN.index)
+    return NaN.append(MA)
