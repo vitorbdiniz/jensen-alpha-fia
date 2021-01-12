@@ -17,7 +17,7 @@ def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= s
     fatores["fator_liquidez"] = calculate_factor(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira1="iliquid", nome_carteira2="liquid",  verbose=verbose)
     fatores["fator_momentum"] = calculate_factor(carteiras["momentum"], returns, factor_name="momentum", nome_carteira1="winner", nome_carteira2="loser",  verbose=verbose)
     #fatores["QMJ"] = calculate_factor(carteiras["quality"], returns, factor_name="qualidade", nome_carteira1="junk", nome_carteira2="quality",  verbose=verbose)
-    #fatores["BAB"] = calculate_factor(carteiras["beta"], returns, factor_name="beta", nome_carteira1="low_beta", nome_carteira2="high_beta",  verbose=verbose)
+    fatores["BAB"] = calculate_factor(carteiras["beta"], returns, factor_name="beta", nome_carteira1="low_beta", nome_carteira2="high_beta",  verbose=verbose)
 
     return fatores
 

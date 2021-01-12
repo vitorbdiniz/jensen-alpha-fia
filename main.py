@@ -33,7 +33,7 @@ def main():
 	quantile = 0.2 
 	verbose = True
 	persist = True
-	test = False
+	test = True
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
@@ -78,12 +78,13 @@ def main():
 		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 	#### Forma carteiras para cada período
-	if test:
+	if False:
 		carteiras = dict()
 		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
 		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
 		carteiras["liquidity"] = pd.read_csv("./data/carteiras/liquidity.csv", index_col=0)
 		carteiras["momentum"] = pd.read_csv("./data/carteiras/momentum.csv", index_col=0)
+		carteiras["beta"] = pd.read_csv("./data/carteiras/beta.csv", index_col=0)
 	else:
 		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, freq, verbose)
 		if persist:
@@ -116,7 +117,7 @@ def main():
 
 	fundos = pd.read_csv("./data/cotas_fias.csv")
 	fis = preprocess_fis(fundos, verbose=verbose)
-	alphas = jensens_alpha(fatores_risco, fis, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"],verbose=verbose)
+	alphas = jensens_alpha(fatores_risco, fis, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum", "fator_beta"],verbose=verbose)
 	if persist:
 		alphas.to_csv("./data/alphas/alphas.csv")
 

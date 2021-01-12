@@ -2,6 +2,7 @@ import datetime as dt
 import pandas as pd
 import numpy as np
 import statistics as st
+from scipy.stats import zscore
 
 import busca_dados
 import matrixDB
@@ -9,18 +10,14 @@ import util
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
+    beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
-    #beta      = carteiraBeta(prices, amostra_aprovada, start, end, years = 3, verbose=verbose)
-    beta = pd.DataFrame()
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico=False, verbose=verbose)
     return carteiras
-
-
-
 
 def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
     '''
@@ -172,9 +169,9 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
 
     if verbose:
         print("Montando carteiras de beta")
-        print("- Calculando betas necessários")
 
-    betas = getBeta(prices, start, end)
+    betas = getBeta(prices, amostra_aprovada,start, end, verbose)
+    #betas.to_csv("./data/alphas/betas.csv")
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -200,9 +197,8 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
     ibov = util.getReturns(busca_dados.get_prices("ibov", start, end)["^BVSP"])
     
     utilDays = util.getUtilDays(start, end)
-
     returns = util.allReturns(prices)
-    betas_result = pd.DataFrame(index=ibov.index)
+    betas_result = pd.DataFrame(index=utilDays)
 
     i = 1
     for ticker in returns.keys():
@@ -215,19 +211,19 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
         j = 0
         for d in utilDays:
             if j < 21 or d not in dates:
-                betas.append(0)
+                betas.append(None)
+                if d in dates:
+                    j+=1
                 continue
             elif j < 500: #2y para 250 dias úteis:
                 stock = check_returns["stock"].iloc[0:j]
                 benchmark = check_returns["benchmark"].iloc[0:j]
-
             else:
                 stock = check_returns["stock"].iloc[j-500:j]
                 benchmark = check_returns["benchmark"].iloc[j-500:j]
             b = beta(Rm=benchmark, Ra=stock)
             betas.append(b)
             j+=1
-
         betas_result[ticker] = betas
     return betas_result
 
@@ -236,7 +232,7 @@ def validate_returns_dates(asset, benchmark):
     benchmark_dates = set(benchmark.index)
     for d in asset.index:
         if d in benchmark_dates:
-            result.loc[d] = [asset["returns"], benchmark["returns"]]
+            result.loc[d] = [ asset["returns"].loc[d], benchmark["returns"].loc[d] ]
     return result
 
 
@@ -288,12 +284,10 @@ def classificar(lista, q, acima, abaixo):
     """
     aux = [x for x in lista if (x != 0 and x != None)]
     if aux == []:
-        lista = [0 for i in lista]
-        med = 99999
-    else:
-        med = st.median(aux)
-        inf = np.quantile(aux, q)
-        sup = np.quantile(aux, 1-q)
+        return [None for i in lista]   
+    
+    inf = np.quantile(aux, q)
+    sup = np.quantile(aux, 1-q)
     result = []
     for each in lista:
         if each != None and each != 0 and each >= sup:
