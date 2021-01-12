@@ -1,32 +1,35 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import ttest_ind
 from sklearn.linear_model import LinearRegression
 
 import fundos_investimento as FI
 import util
 
-def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"], verbose=False):
+def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum", "fator_beta", "fator_qualidade"], verbose=False):
     """
         Calcula o Alfa de Jensen para os fundos fornecidos, a partir dos fatores previamente calculados
 
         Retorna um pandas.DataFrame com colunas: "Nome", "alfa" e os betas solicitados
     """
     if verbose:
-        print("Pré-processando dados de fundos de investimento")
-    columns = ["Nome", "alfa"] + betas_to_be_calculated(fatores)
+        print("Calculando alfas dos fundos de investimento")
+    columns = ["codigo","nome"] + betas_to_be_calculated(fatores) + ["alfa", "estatistica_t", "pvalor"]
     alphas = pd.DataFrame(columns = columns)
-    fis = FI.preprocess_fis(portfolios_returns)
-    i=0
-    for each_fund in fis:
+    if type(portfolios_returns) == type(pd.DataFrame()):
+        portfolios_returns = FI.preprocess_fis(portfolios_returns)
+    i=1
+    for each_fund in portfolios_returns:
         if verbose:
-            print(str(i)+". Calculando alfa do Fundo " + fis[each_fund]["fundo"].iloc[0] + " ---- faltam "+str(len(fis)-i))
-        data = preprocess_dates(fis[each_fund], risk_factors)
-        alphas.loc[i] = get_factor_exposition(data, fatores, each_fund)
+            print(str(i)+". Calculando alfa do Fundo " + portfolios_returns[each_fund]["fundo"].iloc[0] + " ---- faltam "+str(len(portfolios_returns.keys())-i))
+        data = preprocess_dates(portfolios_returns[each_fund], risk_factors)
+        row = [portfolios_returns[each_fund]["codigo"].iloc[i], portfolios_returns[each_fund]["fundo"].iloc[i]] + get_factor_exposition(data, fatores)
+        alphas.loc[i] = row 
         i+=1
 
     return alphas
 
-def get_factor_exposition(data, fatores, fund):
+def get_factor_exposition(data, fatores):
     """
         Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
@@ -36,8 +39,11 @@ def get_factor_exposition(data, fatores, fund):
     y = data[["cotas"]]
     regression = LinearRegression().fit(X, y)
     betas = list(regression.coef_[0])
-    alpha = regression.intercept_[0]
-    return [fund] + [alpha] + betas
+    alpha = list([regression.intercept_[0]])
+    expected = np.array([ x[0] for x in regression.predict(X)], dtype=float)
+    y = np.array(y["cotas"].tolist(), dtype=float)
+    t_stats = list(ttest_ind(y, expected, axis=None))
+    return betas + alpha + t_stats
 
 
 def betas_to_be_calculated(fatores):
