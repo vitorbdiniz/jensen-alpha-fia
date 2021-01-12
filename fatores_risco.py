@@ -33,7 +33,6 @@ def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=st
     mkt = []
     dates = []
     for date in Rm.index:
-        date = str(date.date())
         if date in Rf.index:
             mkt.append(Rm["returns"].loc[date]- Rf["valor"].loc[date])
             dates.append(date)
@@ -49,8 +48,8 @@ def calculate_factor(carteiras, returns, factor_name, nome_carteira1, nome_carte
     dates = []
     i=1
     for i in range(1,len(carteiras.index)):
-        period = carteiras.index[i-1]
-        now = carteiras.index[i]
+        period = str(carteiras.index[i-1])
+        now = str(carteiras.index[i])
         if verbose:
             print(str(i)+". Calculando fator "+ factor_name +" para o periodo " + str(period) + " ---- restam "+str(len(carteiras.index)-i))
             i += 1
