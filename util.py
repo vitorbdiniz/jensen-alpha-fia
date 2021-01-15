@@ -94,7 +94,6 @@ def getUtilDays(start, end):
         util = list(datesReformat(selic["data"], toUsual=False))
     except:
         util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False))
-
     return util
 
 
@@ -179,6 +178,12 @@ def dateReformat(date, toUsual=True):
         d = d[0] + "-" + d[1] + "-" + d[2]
     return d
 
+def mean_annual_return(array):
+    cosmos = cumulative_return(array)
+    daily_return_cosmos = (cosmos[-1]+1)**(1/len(cosmos))-1
+    annual_return_cosmos = (daily_return_cosmos+1)**(250)-1
+    return annual_return_cosmos    
+
 
 def datesReformat(dates, toUsual=True):
     res = []
@@ -202,16 +207,42 @@ def transform(date, freq):
         result = date
     return result
 
+def get_month(date):
+    return int(date[5:7])
+
+def get_day(date):
+    return int(date[8:10])
+
+def get_year(date):
+    return int(date[0:4])    
+
+def count_month_days(dates):
+    result = []
+    n = 0
+    last_month = get_month(dates[0])
+    for d in dates:
+        if last_month == get_month(d):
+            n+=1
+        else:
+            last_month = get_month(d)
+            result.append(n)
+            n = 1
+    result.append(n)
+    return result
 
 def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"):
     '''
         Retorna uma tupla (index, days_number), em que index representa uma lista temporal na frequência desejada e days_number, a quantidade de dias dentro de cada intervalo de tempo
-        freq == "daily" or freq == "quarterly" or freq == "annually"
+        freq == "daily" or freq == "monthly" or freq == "quarterly" or freq == "annually"
     '''
-
     if freq == "daily":
         index = getUtilDays(str(start), str(end))
         days_number = [1 for i in index]
+    elif freq =="monthly":
+        index = getUtilDays(str(start), str(end))
+        days_number = count_month_days(index)
+        index = [dt.datetime(get_year(x), get_month(x), get_day(x)) for x in index]
+        index = [ x.date().__str__() for x in pd.DataFrame(index, index=index).resample("M").pad().index]
     elif freq == "quarterly":
         index = getQuarterRange(str(start), str(end))
         days_number = [d for d in count_quarter_days(str(start), str(end)).values()]
@@ -220,7 +251,6 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
         days_number = count_year_days(getUtilDays(str(start), str(end)))
     else:
         raise AttributeError("Frequência não estipulada corretamente")
-
     return index, days_number
 
 def getReturns(prices):
@@ -230,6 +260,14 @@ def getReturns(prices):
     
 def allReturns(prices = dict()):
     return {ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
+
+def cumulative_return(retornos):
+    capital = 1
+    acumulado = []
+    for r in retornos:
+        capital = capital*(1+r)
+        acumulado += [capital-1]
+    return acumulado
 
 
 def moving_average(array, period):
