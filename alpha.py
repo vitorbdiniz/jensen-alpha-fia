@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import ttest_ind
 from sklearn.linear_model import LinearRegression
+import statsmodels.api as sm
+from statsmodels.tools import add_constant
+
 
 import fundos_investimento as FI
 import util
@@ -14,7 +17,7 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
     """
     if verbose:
         print("Calculando alfas dos fundos de investimento")
-    columns = betas_to_be_calculated(fatores) + ["alfa", "tvalor", "pvalor"]
+    columns = get_columns(fatores)
     alphas = dict()
     if type(portfolios_returns) == type(pd.DataFrame()):
         portfolios_returns = FI.preprocess_fis(portfolios_returns)
@@ -38,39 +41,51 @@ def get_factor_exposition(data, fatores):
     """
         Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
-        retorna uma lista: nome_fundo, alfa_fundo, betas_fundo
+        retorna uma lista: alfa + betas + tvalores + pvalores + fvalor + pvalor do fvalor + R² ajustado
     """
     #data = preprocess_data(df, fatores)
-    X = data[fatores]
+    X = add_constant(data[fatores])
     y = data[["cotas"]]
-    regression = LinearRegression().fit(X, y)
-    betas = list(regression.coef_[0])
-    alpha = list([regression.intercept_[0]])
-    expected = np.array([ x[0] for x in regression.predict(X)], dtype=float)
-    y = np.array(y["cotas"].tolist(), dtype=float)
-    t_stats = list(ttest_ind(y, expected, axis=None))
-    return betas + alpha + t_stats
+
+    regr = sm.OLS(y,X).fit(use_t=True)
+    return regr.params.tolist() + regr.tvalues.tolist() + regr.pvalues.tolist() + [regr.fvalue]+[regr.f_pvalue]+[regr.rsquared_adj]
 
 def preprocess_data(data, fatores):
     data = outlier_treatment(data)
     return data
 
-def outlier_treatment(data, quantile=0.25, mult=1.5):
-    for fac in data.columns:
+def outlier_treatment(df, quantile=0.25, mult=1.5):
+    data = df.drop("dates", axis="columns")
+    cols = data.columns.tolist()
+    for fac in cols:
         q75 = np.quantile(data[fac], 1-quantile)
         q25 = np.quantile(data[fac], quantile)
         iqr = q75 - q25
-        lower, upper = q75 + iqr*mult , q25 - iqr*mult
+        upper, lower = q75 + iqr*mult , q25 - iqr*mult
+        outliers = set()
         for i in data.index:
             if data[fac].loc[i] > upper or data[fac].loc[i] < lower:
-                data.drop(i, axis="index", inplace=True)
-    return data
+                outliers.add(i)
+    result = data.drop(outliers, axis="rows")
+    return result
 
-def betas_to_be_calculated(fatores):
+def get_columns(fatores):
+    fatores = ["alpha"] + fatores
     betas = []
+    tvalor = []
+    pvalor = []
     for f in fatores:
-        betas.append( "beta_" + str(f).split("_")[1])
-    return betas
+        factor = str(f).split("_")
+        if len(factor) > 1:
+            betas.append( "beta_" + str(f).split("_")[1])
+            factor = factor[1]
+        else:
+            betas.append("alpha")
+            factor = factor[0]
+        pvalor.append("pvalue_" + factor)
+        tvalor.append("tvalue_" + factor)
+    result = betas + tvalor + pvalor + ["fvalue", "f_pvalue", "R_squared_adj"]
+    return result
 
 
 
