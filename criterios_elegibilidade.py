@@ -42,8 +42,9 @@ def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=Fals
 
 def criterio_liquidez_minima(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1, verbose = False):
     index, days_number = util.get_frequency(start, end, freq)
-    elegibilidade_liquidez = calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min, media_periodo,verbose)
-    criterion1 = aplica_criterio_liquidez(prices, elegibilidade_liquidez, index, criterion, verbose)
+    #elegibilidade_liquidez = calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min, media_periodo,verbose)
+    #elegibilidade_liquidez.to_csv("elegibilidade_liquidez.csv")
+    criterion1 = aplica_criterio_liquidez(prices, index, criterion, verbose)
     return criterion1
 
 def calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min = 0, media_periodo = 1,verbose = False):
@@ -88,20 +89,18 @@ def busca_liquidez_minima(prices, liquidez_min, start, end, freq):
             result.append( 0 )
     return pd.Series(result, index=time)
 
-def aplica_criterio_liquidez(prices, elegibilidade_liquidez, index, criterion, verbose = False):
+def aplica_criterio_liquidez(prices, index, criterion, verbose = False):
     eleitos = {q: [] for q in index}
     i = 1
-    for ticker in elegibilidade_liquidez:
-        if ticker == "days_number":
-            continue
+    for ticker in prices.keys():
         if verbose:
             print(str(i) + ". Aplicando critério de liquidez mínima em " + ticker + " ---- faltam " + str(len(prices.keys())-i))
             i+=1
-        for q in elegibilidade_liquidez.index:
-            if elegibilidade_liquidez[ticker].loc[q]/elegibilidade_liquidez["days_number"].loc[q] >= criterion:
+        for q in prices[ticker].index:
+            if q in eleitos.keys() and prices[ticker]["liquid_days"].loc[q] >= criterion:
                 eleitos[q] += [ticker]
     
-    return elegibility_dataframe(elegibilidade_liquidez, eleitos, index)
+    return elegibility_dataframe_by_dic(prices, eleitos, index)
     
 def elegibility_dataframe(calculo_elegibilidade_df, dic, index):
     df = pd.DataFrame(index=index)

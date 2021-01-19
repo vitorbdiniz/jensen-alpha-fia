@@ -9,7 +9,7 @@ import util
 
 
 
-def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = False, get_from="yahoo"):
+def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = False, get_from="yahoo", freq="daily"):
     '''
         Busca cotações de uma lista de ativos para um determinado intervalo de tempo
 
@@ -27,7 +27,7 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = Fal
     if get_from=="influx":
         prices = get_prices_from_influx(tickers, start, end, verbose)
     else:
-        prices = get_prices_from_yahoo(tickers, start, end, verbose)
+        prices = get_prices_from_yahoo(tickers, start, end, verbose, freq)
     
     if verbose:
         print("-------------------------------------------------------------------------------------------")
@@ -39,7 +39,7 @@ def kill_units(tickers):
 def get_last_date(prices, start):
     return prices["PETR4"]["Date"].iloc[-1] if "PETR4" in prices.keys() else start
 
-def get_prices_from_yahoo(tickers, start, end, verbose):
+def get_prices_from_yahoo(tickers, start, end, verbose, freq):
     prices = dict()
     i=1
     for t in tickers:
@@ -51,12 +51,27 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
                 prices[t] = web.get_data_yahoo(t+".SA", start, end)
             else:
                 prices[t] = web.get_data_yahoo(t, start, end)
-            prices[t].index = [str(x.date()) for x in prices[t].index]
+            prices[t] = resample_prices(prices[t], freq)
         except:
             if verbose:
                 print("------- Ação não encontrada")
     return prices
 
+def resample_prices(prices, freq):
+
+    liquid_days = [1 if prices["Volume"].loc[date] > 0 else 0   for date in prices.index]
+    prices["liquid_days"] = liquid_days
+
+    volume = prices["Volume"].resample(freq[0].upper()).sum()
+    liquid_days = prices["liquid_days"].resample(freq[0].upper()).sum()
+
+    prices_result = prices.resample(freq[0].upper()).pad()
+
+    prices_result["Volume"] = volume
+    prices_result["liquid_days"] = liquid_days
+    prices_result.index = [str(x.date()) for x in list(prices_result.index)]
+
+    return prices_result
 
 
 def get_prices_from_influx(tickers, start, end, verbose):

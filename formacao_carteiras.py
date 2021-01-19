@@ -10,13 +10,13 @@ import util
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
+    #beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico=False, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
     return carteiras
 
 def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
@@ -172,7 +172,6 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
 
     betas = getBeta(prices, amostra_aprovada,start, end, verbose)
     #betas = pd.read_csv("./data/alphas/betas.csv")
-    betas.to_csv("./data/alphas/betas.csv")
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -208,11 +207,11 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
             i += 1
         check_returns = validate_returns_dates(returns[ticker], ibov)
         dates = set(check_returns.index)
-        betas = []
+        betas = pd.Series()
         j = 0
         for d in utilDays:
             if j < 21 or d not in dates:
-                betas.append(None)
+                betas.loc[d] = None
                 if d in dates:
                     j+=1
                 continue
@@ -223,9 +222,10 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
                 stock = check_returns["stock"].iloc[j-500:j]
                 benchmark = check_returns["benchmark"].iloc[j-500:j]
             b = beta(Rm=benchmark, Ra=stock)
-            betas.append(b)
+            betas.loc[d] = b
             j+=1
         betas_result[ticker] = betas
+        print(betas_result)
     return betas_result
 
 def validate_returns_dates(asset, benchmark):
@@ -249,7 +249,7 @@ def beta(Rm, Ra):
 
 
 
-def consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico = False, verbose = False):
+def consolidaCarteiras(value, size, liquidity, momentum, beta=pd.DataFrame(), quality=pd.DataFrame(), dfUnico = False, verbose = False):
     if verbose:
         print("Consolidação das carteiras")
 
@@ -273,7 +273,7 @@ def consolidaCarteiras(value, size, liquidity, momentum, beta, dfUnico = False, 
         consolidada["liquidity"] = liquidity
         consolidada["momentum"]  = momentum
         #consolidada["quality"]   = quality
-        consolidada["beta"]      = beta
+        #consolidada["beta"]      = beta
     if verbose:
         print("-------------------------------------------------------------------------------------------")
     return consolidada
@@ -290,9 +290,9 @@ def classificar(lista, q, acima, abaixo):
     sup = np.quantile(aux, 1-q)
     result = []
     for each in lista:
-        if each != None and each != 0 and each >= sup:
+        if each != None and each != 0 and each > sup:
             result.append(acima)
-        elif each != None and each != 0 and each <= inf:
+        elif each != None and each != 0 and each < inf:
             result.append(abaixo)
         else:
             result.append(None)

@@ -39,7 +39,7 @@ def compareTime(t1, t2, freq):
         res = compareQuarters(t1, t2)
     elif freq == "annually":
         res = t1-t2
-    elif freq == "daily":
+    elif freq == "daily" or "monthly":
         res = (dt.date(int(t1[0:4]), int(t1[5:7]), int(t1[8:10])) - dt.date(int(t2[0:4]), int(t2[5:7]), int(t2[8:10]))).days
     else:
         raise AttributeError("Frequência não estipulada corretamente")

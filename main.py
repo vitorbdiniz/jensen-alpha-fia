@@ -7,7 +7,7 @@ from busca_dados import get_prices
 from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco
-from alpha import jensens_alpha
+from alpha import jensens_alpha, decompose_returns
 from matrixDB import get_tickers
 from fundos_investimento import preprocess_fis
 
@@ -30,10 +30,11 @@ def main():
 	get_from="yahoo"
 
 	#parâmetros adicionais
-	quantile = 0.2 
+	quantile = 0.25
+	fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"]#, "fator_beta", "fator_qualidade"]
 	verbose = True
 	persist = True
-	test = True
+	test = False
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
@@ -51,7 +52,7 @@ def main():
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 	else:
 		tickers = "all"
-		prices = get_prices(tickers, start, end, verbose, get_from)
+		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from, freq=freq)
 		if persist:
 			if verbose:
 				print("-- Persistindo preços. Não interrompa a execução. --")
@@ -78,7 +79,7 @@ def main():
 		print("--------------------- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS ---------------------")
 		print("-------------------------------------------------------------------------------------------")
 	#### Forma carteiras para cada período
-	if False:
+	if test:
 		carteiras = dict()
 		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
 		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
@@ -117,10 +118,14 @@ def main():
 
 	fundos = pd.read_csv("./data/cotas_fias.csv")
 	fis = preprocess_fis(fundos, verbose=verbose)
-	alphas = jensens_alpha(fatores_risco, fis, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum", "fator_beta"],verbose=verbose)
+	alphas = jensens_alpha(fatores_risco, fis, fatores=fatores,verbose=verbose)
 	if persist:
-		alphas.to_csv("./data/alphas/alphas.csv")
+		for fund in alphas:
+			alphas[fund].to_csv("./data/alphas/"+str(fund)+".csv")
 
+	#decomposed = decompose_returns(fis, fatores_risco, alphas,fatores=fatores, verbose=verbose)
+	#if persist:
+	#	decomposed.to_csv("./data/alphas/decomposed_returns.csv")
 
 	if verbose:
 		print("-------------------------------------------------------------------------------------------")
