@@ -37,13 +37,15 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
         alphas[each_fund] = df
     return alphas
 
-def get_factor_exposition(data, fatores):
+def get_factor_exposition(df, fatores):
     """
         Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
         retorna uma lista: alfa + betas + tvalores + pvalores + fvalor + pvalor do fvalor + R² ajustado
     """
-    #data = preprocess_data(df, fatores)
+    data = preprocess_data(df, fatores)
+    print(data)
+    exit(1)
     X = add_constant(data[fatores])
     y = data[["cotas"]]
 
@@ -57,12 +59,12 @@ def preprocess_data(data, fatores):
 def outlier_treatment(df, quantile=0.25, mult=1.5):
     data = df.drop("dates", axis="columns")
     cols = data.columns.tolist()
+    outliers = set()
     for fac in cols:
-        q75 = np.quantile(data[fac], 1-quantile)
-        q25 = np.quantile(data[fac], quantile)
+        q75 = np.quantile([ float(x) for x in data[fac]], 1-quantile)
+        q25 = np.quantile([ float(x) for x in data[fac]], quantile)
         iqr = q75 - q25
         upper, lower = q75 + iqr*mult , q25 - iqr*mult
-        outliers = set()
         for i in data.index:
             if data[fac].loc[i] > upper or data[fac].loc[i] < lower:
                 outliers.add(i)
