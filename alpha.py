@@ -27,11 +27,11 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
         if verbose:
             print(str(i)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " ---- faltam "+str(len(portfolios_returns.keys())-i))
             i+=1
-        data = preprocess_dates(portfolios_returns[each_fund], risk_factors)
 
+        data = preprocess_dates(portfolios_returns[each_fund], risk_factors)
         for j in range(10, data.shape[0]):
             if verbose:
-                print(str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j))
+                print(str(i)+"."+str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j))
 
             df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores)
         alphas[each_fund] = df
@@ -44,8 +44,6 @@ def get_factor_exposition(df, fatores):
         retorna uma lista: alfa + betas + tvalores + pvalores + fvalor + pvalor do fvalor + R² ajustado
     """
     data = preprocess_data(df, fatores)
-    print(data)
-    exit(1)
     X = add_constant(data[fatores])
     y = data[["cotas"]]
 
@@ -57,7 +55,7 @@ def preprocess_data(data, fatores):
     return data
 
 def outlier_treatment(df, quantile=0.25, mult=1.5):
-    data = df.drop("dates", axis="columns")
+    data = df.drop(["dates", "fundo"], axis="columns")
     cols = data.columns.tolist()
     outliers = set()
     for fac in cols:
@@ -113,25 +111,11 @@ def preprocess_dates(fundo, fatores):
             dates += [fundo["data"].iloc[i]]
             nome += [fundo["fundo"].iloc[i]]
 
-    result = pd.DataFrame({"dates":dates,"fundo":nome, "cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum})
+    result = pd.DataFrame({"cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum}, index=dates)
     return result.drop(labels=0, axis="index")
 
 
 
 
 def decompose_returns(fis, fatores_risco, alphas, fatores, verbose=False):
-    fatores = fatores+["alfa"]
-    result = pd.DataFrame(columns=fatores)
-    for codigo in fis:
-        coef = alphas[alphas["codigo"]==codigo]
-        mkt = coef["beta_mercado"]
-        smb = coef["beta_tamanho"]
-        hml = coef["beta_valor"]
-        liq = coef["beta_liquidez"]
-        mom = coef["beta_momentum"]
-        #bab = coef["beta_beta"]
-        #qmj = coef["beta_qualidade"]
-        alfa = coef["alfa"]         
-
-        util.mean_annual_return(fis[codigo]["cota"])
     return

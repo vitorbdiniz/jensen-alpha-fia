@@ -7,15 +7,18 @@ from scipy.stats import zscore
 import busca_dados
 import matrixDB
 import util
+import padding as pad
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
     #beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
+    #beta.to_csv("./data/carteiras/beta.csv")
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
+
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
     return carteiras
 
@@ -23,16 +26,15 @@ def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), en
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high" ou "low" de acordo com o múltiplo book-to-market (BM)
     '''
-    if verbose:
-        print("Montando carteiras de valor")
+    pad.verbose("Montando carteiras de valor", level=3, verbose=verbose)
 
     i = 1
     patrimonio_liquido = matrixDB.get_equity(environment="prod", verbose=verbose)
     value = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     for period in amostra_aprovada.index:
-        if verbose:
-            print(str(i)+". Montando carteiras de valor para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i))
-            i += 1
+        pad.verbose(str(i)+". Montando carteiras de valor para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
+
+        i += 1
         BM = []
         for ticker in amostra_aprovada.columns:
             if amostra_aprovada[ticker].loc[period]:
@@ -45,9 +47,8 @@ def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), en
                 BM.append(0)
         value.loc[period] = classificar(BM, quantile, "high", "low")
 
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
-    
+    pad.verbose('line', level=3, verbose=verbose)
+
     return value
 
 
@@ -55,15 +56,14 @@ def carteiraSize(prices, amostra_aprovada, quantile, start= dt.date.today(), end
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "big" ou "small" de acordo com o seu valor de mercado
     '''
-    if verbose:
-        print("Montando carteiras de tamanho")
+    pad.verbose("Montando carteiras de tamanho", level=3, verbose=verbose)
+
     stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     i = 1
     size = pd.DataFrame(index=amostra_aprovada.index, columns = amostra_aprovada.columns)
     for period in amostra_aprovada.index:
-        if verbose:
-            print(str(i)+". Montando carteiras de tamanho para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i))
-            i += 1
+        pad.verbose(str(i)+". Montando carteiras de tamanho para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
+        i += 1
         market_cap = []
         for ticker in amostra_aprovada.columns:
             if amostra_aprovada[ticker].loc[period]:
@@ -76,23 +76,22 @@ def carteiraSize(prices, amostra_aprovada, quantile, start= dt.date.today(), end
                 market_cap.append(0)
         size.loc[period] = classificar(market_cap, quantile, "big", "small")
 
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose('line', level=3, verbose=verbose)
+
     return size
 
 def carteiraLiquidity(prices, amostra_aprovada, quantile, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "liquid" ou "iliquid" de acordo com a sua liquidez
     '''
-    if verbose:
-        print("Montando carteiras de liquidez")
+    pad.verbose("Montando carteiras de liquidez", level=3, verbose=verbose)
 
     liquidity = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i=1
     for periodo in amostra_aprovada.index:
-        if verbose:
-            print(str(i)+". Montando carteiras de liquidez para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i))
-            i += 1
+        pad.verbose(str(i)+". Montando carteiras de liquidez para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
+        i += 1
+        
         liquidez_periodo = []
         for ticker in amostra_aprovada.columns:
             if amostra_aprovada[ticker].loc[periodo]:
@@ -101,8 +100,7 @@ def carteiraLiquidity(prices, amostra_aprovada, quantile, verbose=False):
                 liquidez_periodo.append(0)
         liquidity.loc[periodo] = classificar(liquidez_periodo, quantile, "liquid", "iliquid")
 
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose('line', level=3, verbose=verbose)
 
     return liquidity
 
@@ -112,17 +110,15 @@ def carteiraMomentum(prices, amostra_aprovada, quantile, start= dt.date.today(),
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "winner" ou "loser" de acordo com seu retorno
     '''
-    if verbose:
-        print("Montando carteiras de momentum")
-        print("Calculando rentabilidades necessárias")
+    pad.verbose("Montando carteiras de momentum", level=3, verbose=verbose)
+    pad.verbose("Calculando rentabilidades necessárias", level=4, verbose=verbose)
 
     returns = util.allReturns(prices)
     momentum = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
     i = 1
     for periodo in amostra_aprovada.index:
-        if verbose:
-            print(str(i)+". Montando carteiras de momentum para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i))
-            i += 1
+        pad.verbose(str(i)+". Montando carteiras de momentum para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
+        i += 1
 
         rentabilidade_periodo = []
         for ticker in amostra_aprovada.columns:
@@ -132,8 +128,7 @@ def carteiraMomentum(prices, amostra_aprovada, quantile, start= dt.date.today(),
                 rentabilidade_periodo.append(0)
         momentum.loc[periodo] = classificar(rentabilidade_periodo, quantile, "winner", "loser")
 
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=3, verbose=verbose)
 
     return momentum
 
@@ -150,13 +145,6 @@ def carteiraQuality(prices, amostra_aprovada, quantile, start= dt.date.today(), 
     # Safety = z(zbab + zlev + zo + zz + zevol)
     # Quality = z (Profitabiliy + Growth + Safety)
 
-    if verbose:
-        print("Montando carteiras de qualidade")
-
-
-
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
 
 
     #TODO
@@ -166,18 +154,17 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
     '''
-
-    if verbose:
-        print("Montando carteiras de beta")
+    pad.verbose("Montando carteiras de beta", level=3, verbose=verbose)
 
     betas = getBeta(prices, amostra_aprovada,start, end, verbose)
+    betas.to_csv("./data/alphas/betas.csv")
     #betas = pd.read_csv("./data/alphas/betas.csv")
-    carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
+    carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns=amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
-        if verbose:
-            print(str(i)+". Montando carteiras de beta para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i))
-            i += 1
+        pad.verbose(str(i)+". Montando carteiras de beta para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
+        i += 1
+        
         b = []
         for ticker in amostra_aprovada.columns:
             if period in betas.index and amostra_aprovada[ticker].loc[period] and betas[ticker].loc[period] != None:
@@ -192,8 +179,9 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
     return carteira_beta
 
 def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today(), verbose=False):
-    if verbose:
-        print("Calculando retornos necessários")
+    pad.verbose("Calculando betas", level=3, verbose=verbose)
+    pad.verbose("Calculando retornos necessários", level=4, verbose=verbose)
+
     ibov = util.getReturns(busca_dados.get_prices("ibov", start, end)["^BVSP"])
     
     utilDays = util.getUtilDays(start, end)
@@ -202,14 +190,15 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
 
     i = 1
     for ticker in returns.keys():
-        if verbose:
-            print(str(i)+". Calculando beta de " + ticker + " ---- restam " + str(len(returns.keys()) - i))
-            i += 1
+        pad.verbose(str(i)+". Calculando beta de " + ticker + " ---- restam " + str(len(returns.keys()) - i), level=5, verbose=verbose)
+        i += 1
+
         check_returns = validate_returns_dates(returns[ticker], ibov)
         dates = set(check_returns.index)
         betas = pd.Series()
         j = 0
         for d in utilDays:
+            d = str(d)
             if j < 21 or d not in dates:
                 betas.loc[d] = None
                 if d in dates:
@@ -225,7 +214,6 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
             betas.loc[d] = b
             j+=1
         betas_result[ticker] = betas
-        print(betas_result)
     return betas_result
 
 def validate_returns_dates(asset, benchmark):
@@ -250,17 +238,16 @@ def beta(Rm, Ra):
 
 
 def consolidaCarteiras(value, size, liquidity, momentum, beta=pd.DataFrame(), quality=pd.DataFrame(), dfUnico = False, verbose = False):
-    if verbose:
-        print("Consolidação das carteiras")
+    pad.verbose("Consolidação das carteiras", level=3, verbose=verbose)
 
     if dfUnico:
         consolidada = pd.DataFrame(index=value.index, columns=value.columns)
         i = 1
 
         for ticker in value.columns:
-            if verbose:
-                print(str(i) + ". Consolidando ação: " + str(ticker) + " ---- restam " + str(len(value.columns)-i))
-                i+=1
+            pad.verbose(str(i) + ". Consolidando ação: " + str(ticker) + " ---- restam " + str(len(value.columns)-i), level=5, verbose=verbose)
+            i+=1
+            
             col = []
             for index in value.index:
                 col.append(str(value[ticker].loc[index]) +","+ str(size[ticker].loc[index]) +","+ str(liquidity[ticker].loc[index]) +","+ str(momentum[ticker].loc[index]))

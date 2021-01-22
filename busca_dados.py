@@ -6,6 +6,7 @@ import pandas_datareader as web
 #Workspace libs
 import matrixDB
 import util
+import padding as pad
 
 
 
@@ -22,15 +23,15 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = Fal
     elif str(tickers).lower() == "ibov" or str(tickers) == "^BVSP":
         tickers = ["^BVSP"]
     elif type(tickers) != type([]):
-        raise AttributeError("ticker deve ser 'all' ou list")
+        raise AttributeError("ticker deve ser 'all', 'ibov', '^BVSP' ou list")
 
     if get_from=="influx":
         prices = get_prices_from_influx(tickers, start, end, verbose)
     else:
         prices = get_prices_from_yahoo(tickers, start, end, verbose, freq)
     
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=4, verbose=verbose)
+
     return prices
 
 def kill_units(tickers):
@@ -43,9 +44,8 @@ def get_prices_from_yahoo(tickers, start, end, verbose, freq):
     prices = dict()
     i=1
     for t in tickers:
-        if verbose:
-            print(str(i) + ". Buscando preços de " + str(t) + " ---- faltam " + str(len(tickers)-i))
-            i+=1
+        pad.verbose(str(i) + ". Buscando preços de " + str(t) + " ---- faltam " + str(len(tickers)-i), level=5, verbose=verbose)
+        i+=1
         try:
             if t[0] != '^':
                 prices[t] = web.get_data_yahoo(t+".SA", start, end)
@@ -118,8 +118,7 @@ def get_stockid(stockid, ticker):
     return -1
 
 def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False, persist = False):
-    if verbose:
-        print("Buscando série histórica da Selic")
+    pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
     start = util.dateReformat(start)
     end = util.dateReformat(end)
     url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
@@ -135,8 +134,7 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = False, pe
 
     if persist:
         selic.to_csv("./data/selic.csv")
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=5, verbose=verbose)
     return selic
 
 

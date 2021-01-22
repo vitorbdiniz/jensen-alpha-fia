@@ -3,18 +3,18 @@ import datetime as dt
 import numpy as np
 
 import util
-
+import padding as pad
 
 def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1,persist=False, verbose = False):
+
     liquidez_minima = criterio_liquidez_minima(prices, start, end, freq, liquidez_min, criterion, media_periodo, verbose)
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=5, verbose=verbose)
+
     maior_liquidez = criterio_maior_liquidez(prices, start, end, freq, verbose)
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=5, verbose=verbose)
+    
     listagem = criterio_listagem(prices, start, end, freq, verbose)
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.verbose("line", level=5, verbose=verbose)
 
     criterios = intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose)
     if persist:
@@ -28,12 +28,13 @@ def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today
 def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=False):
     intersecao_criterios = pd.DataFrame(index=listagem.index)
 
+    pad.verbose("Calculando interseção de critérios", level=3, verbose=verbose)
+
     i = 1
     for col in listagem.columns:
         aux = []
-        if verbose:
-            print(str(i)+". Calculando interseção de critérios de "+ col + " ---- faltam "+str(len(listagem.columns)-i))
-            i+=1
+        pad.verbose(str(i)+". Calculando interseção de critérios de "+ col + " ---- faltam "+str(len(listagem.columns)-i), level=5, verbose=verbose)
+        i+=1
         for index in liquidez_minima.index:
             aux.append(liquidez_minima[col].loc[index] and maior_liquidez[col].loc[index] and listagem[col].loc[index])
         intersecao_criterios[col] = aux
@@ -42,6 +43,7 @@ def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=Fals
 
 def criterio_liquidez_minima(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1, verbose = False):
     index, days_number = util.get_frequency(start, end, freq)
+    pad.verbose("Aplicação do critério de liquidez mínima", level=3, verbose=verbose)
     #elegibilidade_liquidez = calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min, media_periodo,verbose)
     #elegibilidade_liquidez.to_csv("elegibilidade_liquidez.csv")
     criterion1 = aplica_criterio_liquidez(prices, index, criterion, verbose)
@@ -93,9 +95,8 @@ def aplica_criterio_liquidez(prices, index, criterion, verbose = False):
     eleitos = {q: [] for q in index}
     i = 1
     for ticker in prices.keys():
-        if verbose:
-            print(str(i) + ". Aplicando critério de liquidez mínima em " + ticker + " ---- faltam " + str(len(prices.keys())-i))
-            i+=1
+        pad.verbose(str(i) + ". Aplicando critério de liquidez mínima em " + ticker + " ---- faltam " + str(len(prices.keys())-i), level=5, verbose=verbose)
+        i+=1
         for q in prices[ticker].index:
             if q in eleitos.keys() and prices[ticker]["liquid_days"].loc[q] >= criterion:
                 eleitos[q] += [ticker]
@@ -116,6 +117,7 @@ def elegibility_dataframe(calculo_elegibilidade_df, dic, index):
 
 
 def criterio_maior_liquidez(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily",verbose = False):
+    pad.verbose("Aplicando o critério do ticker de maior liquidez", level=3, verbose=verbose)
     index, days_number = util.get_frequency(start, end, freq)
     elegibilidade_tickers = {q:[] for q in index}
     done = set()
@@ -123,7 +125,7 @@ def criterio_maior_liquidez(prices, start = dt.date.today(), end = dt.date.today
     for ticker in prices:
         if ticker in done:
             continue
-        print(str(i)+". Aplicando critério de ticker de maior liquidez em "+ ticker + " ---- faltam "+str(len(prices)-i))
+        pad.verbose(str(i)+". Aplicando critério de ticker de maior liquidez em "+ ticker + " ---- faltam "+str(len(prices)-i), level=5, verbose=verbose)
         cia_tickers = util.findSimilar(ticker, list(prices.keys()))
         i+=len(cia_tickers)
         for q in elegibilidade_tickers:
@@ -149,13 +151,13 @@ def getMostLiquidTicker(prices, tickers, period):
 
 
 def criterio_listagem(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily",verbose = False):
+    pad.verbose("Aplicando critério de listagem", level=3, verbose=verbose)
     index, days_number = util.get_frequency(start, end, freq)
     elegibilidade_listagem = {q:[] for q in index}
     i = 1
     for ticker in prices:
-        if verbose:
-            print(str(i)+". Aplicando critério de listagem em "+ ticker + " ---- faltam "+str(len(prices)-i))
-            i += 1
+        pad.verbose(str(i)+". Aplicando critério de listagem em "+ ticker + " ---- faltam "+str(len(prices)-i), level=5, verbose=verbose)
+        i += 1
         if type(prices[ticker].index[0]) == type(' '):
             q = util.transform(prices[ticker].index[0], freq)   
         else:
