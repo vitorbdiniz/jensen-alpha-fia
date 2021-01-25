@@ -44,54 +44,8 @@ def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=Fals
 def criterio_liquidez_minima(prices, start = dt.date.today(), end = dt.date.today(), freq = "daily", liquidez_min = 0, criterion = 0.8,media_periodo = 1, verbose = False):
     index, days_number = util.get_frequency(start, end, freq)
     pad.verbose("Aplicação do critério de liquidez mínima", level=3, verbose=verbose)
-    #elegibilidade_liquidez = calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min, media_periodo,verbose)
-    #elegibilidade_liquidez.to_csv("elegibilidade_liquidez.csv")
-    criterion1 = aplica_criterio_liquidez(prices, index, criterion, verbose)
-    return criterion1
 
-def calcula_liquidez(prices, index, start, end, days_number, freq, liquidez_min = 0, media_periodo = 1,verbose = False):
-    elegibilidade_liquidez = pd.DataFrame(index=index)
-    elegibilidade_liquidez["days_number"] = days_number
-    #print("liquidez minima")
-    ##liquidez_min = busca_liquidez_minima(prices, liquidez_min, start, end, freq)
-    #print("liquidez minima OK")
-    i = 1
-    for ticker in prices:
-        days = {q:0 for q in index}
-        if verbose:
-            print(str(i) + ". Calculando dias de liquidez de " + ticker + " ---- faltam " + str(len(prices.keys())-i))
-            i+=1
 
-        #prices[ticker]["Volume"] = util.moving_average(prices[ticker]["Volume"], media_periodo)
-        #print("Média Móvel OK")
-        for d in prices[ticker].index:
-            if prices[ticker]["Volume"].loc[d] >= liquidez_min:#.loc[d]:
-                if type(d) == type(" "):
-                    time = util.transform(d, freq)
-                else:
-                    time = util.transform(str(d.date()), freq)
-                if time in list(days.keys()):
-                    days[time] += 1 
-        elegibilidade_liquidez[ticker] = [j for j in days.values()]
-    return elegibilidade_liquidez
-
-def busca_liquidez_minima(prices, liquidez_min, start, end, freq):
-    result = []
-    time, days_number = util.get_frequency(start, end, freq)
-    for t in time:
-        liq = []
-        for ticker in prices.keys():
-            if (t in prices[ticker].index):
-                if (not pd.isna(prices[ticker]["Volume"].loc[t])):
-                    if (prices[ticker]["Volume"].loc[t] > 0):
-                        liq += [ prices[ticker]["Volume"].loc[t] ]
-        if liq != []:
-            result.append( np.quantile(liq, liquidez_min) )
-        else:
-            result.append( 0 )
-    return pd.Series(result, index=time)
-
-def aplica_criterio_liquidez(prices, index, criterion, verbose = False):
     eleitos = {q: [] for q in index}
     i = 1
     for ticker in prices.keys():
