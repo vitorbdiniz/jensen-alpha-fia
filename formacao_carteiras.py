@@ -11,8 +11,8 @@ import padding as pad
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    #beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
-    #beta.to_csv("./data/carteiras/beta.csv")
+    beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
+    beta.to_csv("./data/carteiras/beta.csv")
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
@@ -156,9 +156,9 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
     '''
     pad.verbose("Montando carteiras de beta", level=3, verbose=verbose)
 
-    betas = getBeta(prices, amostra_aprovada,start, end, verbose)
-    betas.to_csv("./data/alphas/betas.csv")
-    #betas = pd.read_csv("./data/alphas/betas.csv")
+    #betas = getBeta(prices, amostra_aprovada,start, end, verbose)
+    #betas.to_csv("./data/alphas/betas.csv")
+    betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)    
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns=amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -167,10 +167,11 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
         
         b = []
         for ticker in amostra_aprovada.columns:
-            if period in betas.index and amostra_aprovada[ticker].loc[period] and betas[ticker].loc[period] != None:
+            if period in betas.index and amostra_aprovada[ticker].loc[period] and (betas[ticker].loc[period] != None and pd.notna(betas[ticker].loc[period])):
                 b.append( betas[ticker].loc[period] )
             else:
                 b.append(None)
+
         carteira_beta.loc[period] = classificar(b, quantile, "high_beta", "low_beta")
 
     if verbose:
