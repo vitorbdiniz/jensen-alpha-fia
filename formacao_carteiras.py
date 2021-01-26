@@ -11,15 +11,14 @@ import padding as pad
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    beta      = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
-    beta.to_csv("./data/carteiras/beta.csv")
+    BAB       = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
 
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, dfUnico=False, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, BAB, dfUnico=False, verbose=verbose)
     return carteiras
 
 def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
@@ -132,24 +131,6 @@ def carteiraMomentum(prices, amostra_aprovada, quantile, start= dt.date.today(),
 
     return momentum
 
-
-
-
-def carteiraQuality(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), verbose=False):
-    '''
-        Classifica cada ativo por período (diário, trimestral ou anual) em "quality" ou "junk" de acordo com ... (Ver Buffett's Alpha)
-    '''
-
-    # Profitability = z (z_gpoa + zroe + zroa + zcfoa + zgmar + zacc) 
-    # Growth = z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
-    # Safety = z(zbab + zlev + zo + zz + zevol)
-    # Quality = z (Profitabiliy + Growth + Safety)
-
-
-
-    #TODO
-    return
-
 def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
@@ -174,8 +155,7 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
 
         carteira_beta.loc[period] = classificar(b, quantile, "high_beta", "low_beta")
 
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    pad.get_line()
 
     return carteira_beta
 
