@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import ttest_ind
-from sklearn.linear_model import LinearRegression
+
 import statsmodels.api as sm
 from statsmodels.tools import add_constant
-
+from scipy.stats import zscore
 
 import fundos_investimento as FI
 import util
@@ -50,12 +49,34 @@ def get_factor_exposition(df, fatores):
     regr = sm.OLS(y,X).fit(use_t=True)
     return regr.params.tolist() + regr.tvalues.tolist() + regr.pvalues.tolist() + [regr.fvalue]+[regr.f_pvalue]+[regr.rsquared_adj]
 
+'''
+    FUNÇÕES AUXILIARES
+'''
+
+
+
 def preprocess_data(data, fatores):
-    data = outlier_treatment(data)
+    data = outlier_treatment(data, method="iqr", quantile=0.25, mult=1.5)
     return data
 
-def outlier_treatment(df, quantile=0.25, mult=1.5):
-    data = df.drop(["dates", "fundo"], axis="columns")
+def outlier_treatment(df, method, quantile=0.25, mult=1.5):
+    if method == "iqr":
+        result = outlier_treatment_by_iqr(df, quantile=quantile, mult=mult)
+    else:
+        result = outlier_treatment_by_zscore(df, mult=mult)
+    return result
+
+def outlier_treatment_by_zscore(df, mult=1.5):
+    outliers = set()
+    for factors in df:
+        z = zscore(df[factors])
+        for i in range(len(z)):
+            if abs(z[i]) > mult:
+                outliers.add(i)
+    result = df.drop(outliers, axis="index")
+    return result
+
+def outlier_treatment_by_iqr(data, quantile=0.25, mult=1.5):
     cols = data.columns.tolist()
     outliers = set()
     for fac in cols:
@@ -64,7 +85,8 @@ def outlier_treatment(df, quantile=0.25, mult=1.5):
         iqr = q75 - q25
         upper, lower = q75 + iqr*mult , q25 - iqr*mult
         for i in data.index:
-            if data[fac].loc[i] > upper or data[fac].loc[i] < lower:
+            num = data[fac].loc[i].iloc[-1] if type(data[fac].loc[i]) == type(pd.Series([])) else data[fac].loc[i]
+            if num > upper or num < lower:
                 outliers.add(i)
     result = data.drop(outliers, axis="rows")
     return result
@@ -99,23 +121,17 @@ def preprocess_dates(fundo, fatores):
     for i in range(fundo.shape[0]):
         if fundo["data"].iloc[i] in fatores.index:
             cotas += [fundo["variacao"].iloc[i]]
-            fator_mercado += [fatores.loc[fundo["data"].iloc[i]]["fator_mercado"]]
-            fator_tamanho += [fatores.loc[fundo["data"].iloc[i]]["fator_tamanho"]]
-            fator_valor += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
-            fator_liquidez += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
-            fator_momentum += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
-            #fator_beta += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
+            fator_mercado    += [fatores.loc[fundo["data"].iloc[i]]["fator_mercado"]]
+            fator_tamanho    += [fatores.loc[fundo["data"].iloc[i]]["fator_tamanho"]]
+            fator_valor      += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
+            fator_liquidez   += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
+            fator_momentum   += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
+            fator_beta      += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
             #fator_qualidade += [fatores.loc[fundo["data"].iloc[i]]["fator_qualidade"]]
 
 
             dates += [fundo["data"].iloc[i]]
             nome += [fundo["fundo"].iloc[i]]
 
-    result = pd.DataFrame({"cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum}, index=dates)
-    return result.drop(labels=0, axis="index")
-
-
-
-
-def decompose_returns(fis, fatores_risco, alphas, fatores, verbose=False):
-    return
+    result = pd.DataFrame({"cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum, "fator_beta":fator_beta}, index=dates)
+    return result.drop(labels=result.index[0], axis="index")
