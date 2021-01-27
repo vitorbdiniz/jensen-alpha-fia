@@ -32,11 +32,11 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
             if verbose:
                 print(str(i)+"."+str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j))
 
-            df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores)
+        df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores, each_fund)
         alphas[each_fund] = df
     return alphas
 
-def get_factor_exposition(df, fatores):
+def get_factor_exposition(df, fatores, name):
     """
         Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
@@ -47,6 +47,9 @@ def get_factor_exposition(df, fatores):
     y = data[["cotas"]]
 
     regr = sm.OLS(y,X).fit(use_t=True)
+
+    util.write_file(path="./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt", data=regr.summary())
+
     return regr.params.tolist() + regr.tvalues.tolist() + regr.pvalues.tolist() + [regr.fvalue]+[regr.f_pvalue]+[regr.rsquared_adj]
 
 '''
