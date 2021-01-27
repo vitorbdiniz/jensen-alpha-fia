@@ -137,9 +137,9 @@ def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end
     '''
     pad.verbose("Montando carteiras de beta", level=3, verbose=verbose)
 
-    #betas = getBeta(prices, amostra_aprovada,start, end, verbose)
-    #betas.to_csv("./data/alphas/betas.csv")
-    betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)    
+    betas = getBeta(prices, amostra_aprovada,start, end, verbose)
+    betas.to_csv("./data/alphas/betas.csv")
+    #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)    
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns=amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
