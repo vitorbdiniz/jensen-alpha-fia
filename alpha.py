@@ -49,7 +49,7 @@ def get_factor_exposition(df, fatores, name):
     regr = sm.OLS(y,X).fit(use_t=True)
 
     util.write_file(path="./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt", data=regr.summary())
-
+    
     return regr.params.tolist() + regr.tvalues.tolist() + regr.pvalues.tolist() + [regr.fvalue]+[regr.f_pvalue]+[regr.rsquared_adj]
 
 '''
