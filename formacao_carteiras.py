@@ -18,7 +18,7 @@ def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), 
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
     #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
 
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, BAB, dfUnico=False, verbose=verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, BAB, verbose=verbose)
     return carteiras
 
 def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
@@ -218,32 +218,19 @@ def beta(Rm, Ra):
 
 
 
-def consolidaCarteiras(value, size, liquidity, momentum, beta=pd.DataFrame(), quality=pd.DataFrame(), dfUnico = False, verbose = False):
+def consolidaCarteiras(value, size, liquidity, momentum, beta=pd.DataFrame(), quality=pd.DataFrame(), verbose = False):
     pad.verbose("Consolidação das carteiras", level=3, verbose=verbose)
 
-    if dfUnico:
-        consolidada = pd.DataFrame(index=value.index, columns=value.columns)
-        i = 1
-
-        for ticker in value.columns:
-            pad.verbose(str(i) + ". Consolidando ação: " + str(ticker) + " ---- restam " + str(len(value.columns)-i), level=5, verbose=verbose)
-            i+=1
-            
-            col = []
-            for index in value.index:
-                col.append(str(value[ticker].loc[index]) +","+ str(size[ticker].loc[index]) +","+ str(liquidity[ticker].loc[index]) +","+ str(momentum[ticker].loc[index]))
-            consolidada[ticker] = col
-    else:
-        consolidada = dict()
-        i = 1
-        consolidada["value"]     = value
-        consolidada["size"]      = size
-        consolidada["liquidity"] = liquidity
-        consolidada["momentum"]  = momentum
-        #consolidada["quality"]   = quality
-        #consolidada["beta"]      = beta
-    if verbose:
-        print("-------------------------------------------------------------------------------------------")
+    consolidada = dict()
+    consolidada["value"]     = value
+    consolidada["size"]      = size
+    consolidada["liquidity"] = liquidity
+    consolidada["momentum"]  = momentum
+    consolidada["beta"]      = beta
+    #consolidada["quality"]   = quality
+    
+    
+    pad.verbose("line", level=3, verbose=verbose)
     return consolidada
 
 def classificar(lista, q, acima, abaixo):
