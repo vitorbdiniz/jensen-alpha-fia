@@ -11,7 +11,7 @@ def preprocess_fis(fundos=pd.DataFrame(), freq="daily", verbose = False):
     '''
     if verbose:
         print("Pré-processando dados de fundos de investimento")
-        codigo = fundos["codigo"].loc[0]
+        codigo = fundos["fundo"].loc[0]
         j = 2
         print("1. Pré-processando dados de "+fundos["fundo"].loc[0])
 
@@ -19,14 +19,14 @@ def preprocess_fis(fundos=pd.DataFrame(), freq="daily", verbose = False):
 
     for i in fundos.index:
         if verbose:
-            if fundos["codigo"].loc[i] != codigo:
-                codigo = fundos["codigo"].loc[i]
+            if fundos["fundo"].loc[i] != codigo:
+                codigo = fundos["fundo"].loc[i]
                 print(str(j) + ". Pré-processando dados de " +fundos["fundo"].loc[i])
                 j += 1
         row = fundos.loc[i]
-        if fundos["codigo"].loc[i] not in fis:
-            fis[fundos["codigo"].loc[i]] = pd.DataFrame(columns=fundos.columns)
-        fis[fundos["codigo"].loc[i]].loc[i] = row
+        if fundos["fundo"].loc[i] not in fis:
+            fis[fundos["fundo"].loc[i]] = pd.DataFrame(columns=fundos.columns)
+        fis[fundos["fundo"].loc[i]].loc[i] = row
     
     fis = process_frequency(fis, freq, verbose)
 
