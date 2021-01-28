@@ -4,6 +4,9 @@ import numpy as np
 import util
 
 
+def decompose_all_by_factors(alphas, factors, verbose=0):
+    return { fund : decompose_by_factors(alphas[fund], factors, verbose=verbose) for fund in alphas} 
+
 
 def decompose_by_factors(coeficients, factors, verbose=0):
   result = pd.DataFrame(columns = ["alpha"] + [x for x in factors.columns])
