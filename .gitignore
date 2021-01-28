@@ -30,7 +30,7 @@ data/prices/
 #PyCache
 __pycache__/
 
-#rascunho de alphas
+#rascunhos
 data/alphas/check/
 data/alphas/regression_tables/
-
+notes/
