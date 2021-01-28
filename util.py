@@ -269,6 +269,11 @@ def cumulative_return(retornos):
         acumulado += [capital-1]
     return acumulado
 
+def avg_return(retornos):
+    periods = len(retornos)
+    avg = (1+cumulative_return(retornos=retornos)[-1])**(1/periods)-1
+    return avg
+
 
 def moving_average(array, period):
     '''
@@ -288,3 +293,10 @@ def moving_average(array, period):
         replaced_NaN += [sum_acc/(i+1)]
     NaN = pd.Series(replaced_NaN, index=NaN.index)
     return NaN.append(MA)
+
+
+def write_file(path, data):
+    f = open("./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt" )
+    f.write( regr.summary() ) 
+    f.close()
+    return
