@@ -1,3 +1,4 @@
+from os.path import realpath
 import pandas as pd
 import datetime as dt
 import pandas_datareader as web
@@ -296,7 +297,8 @@ def moving_average(array, period):
 
 
 def write_file(path, data):
-    f = open("./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt" )
-    f.write( regr.summary() ) 
+    #path = realpath(path)
+    f = open(path, "w")
+    f.write(data) 
     f.close()
     return
