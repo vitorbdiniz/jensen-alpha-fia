@@ -9,14 +9,17 @@ import matrixDB
 import util
 import padding as pad
 
+from fator_qualidade import carteiraQuality 
+
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    BAB       = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
+    quality   = carteiraQuality(prices, amostra_aprovada, quantile, start, end, verbose)
+
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
-    #quality   = carteiraQuality(prices, amostra_aprovada, start, end, verbose)
+    BAB       = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
 
     carteiras = consolidaCarteiras(value, size, liquidity, momentum, BAB, verbose=verbose)
     return carteiras
