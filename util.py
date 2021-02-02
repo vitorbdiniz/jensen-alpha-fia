@@ -266,13 +266,18 @@ def cumulative_return(retornos):
     capital = 1
     acumulado = []
     for r in retornos:
-        capital = capital*(1+r)
-        acumulado += [capital-1]
+        if r == None or pd.isna(r):
+            acumulado += [capital-1]
+        else:
+            capital = capital*(1+r)
+            acumulado += [capital-1]
     return acumulado
 
 def avg_return(retornos):
-    periods = len(retornos)
-    avg = (1+cumulative_return(retornos=retornos)[-1])**(1/periods)-1
+
+    acc_return = cumulative_return(retornos=retornos)[-1]
+    periods = len(retornos) if len(retornos) % 2 == 1 or acc_return > 0 else len(retornos)-1
+    avg = (1+acc_return)**(1/periods)-1
     return avg
 
 
