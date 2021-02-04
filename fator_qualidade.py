@@ -28,26 +28,26 @@ def get_quality(prices, amostra_aprovada, verbose=0):
     for ticker in prices.keys():
         pad.verbose(str(i)+". Calculando indicador de qualidade de "+ str(ticker) + " ---- restam "+str(len(prices.keys())-i), level=4, verbose=verbose)
         i+=1
-
-        indicadores_profitability = process_data( pd.DataFrame(df[df["ticker"]==ticker]) )
+        data = pd.DataFrame(df[df["ticker"]==ticker])
+        if data.shape[0] == 0:
+            print(ticker + " não apresentou res")
+            continue
+        indicadores_profitability = process_data( data )
         profitability = get_profitability(indicadores_profitability, verbose=verbose)
-        print(profitability)
-        exit(1)
-        #growth = get_growth(df,amostra_aprovada, verbose) #z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
-        #safety = get_safety(df,amostra_aprovada, verbose) #z(zbab + zlev + zo + zz + zevol)
+        quality[ticker] = profitability
+        #growth = get_growth(data,amostra_aprovada, verbose) #z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
+        #safety = get_safety(data,amostra_aprovada, verbose) #z(zbab + zlev + zo + zz + zevol)
         #quality[ticker] = calculate_quality(profitabiliy, growth, safety, verbose)
-
+    exit(quality)
     return quality
 
 def get_profitability(data, verbose = 0):
     df_zscores = z(data)
+    result = pd.Series( [mean(df_zscores.loc[index].tolist()) for index in df_zscores.index], df_zscores.index)
 
-    result = []
-    for index in df_zscores.index:
-        result.append( mean(df_zscores.loc[index].tolist()) )
-    return pd.Series(result, index=df_zscores.index)
+    return result
 
-def kill_duplicates(df, check_column="demonstrativo_id"):
+def kill_duplicates(df, check_column="data_referencia"):
     duplicates = set()
     checked = set()
     for i in df.index:
@@ -60,15 +60,12 @@ def kill_duplicates(df, check_column="demonstrativo_id"):
 
 def process_data(df=pd.DataFrame()):
     data = kill_duplicates(df)
-    return data
+    data.index = data["data_referencia"]
+
     data = ITR(data, columns=["receita", "custos"])
     data = LTM(data, columns=["receita", "custos"])
 
-    print(data)
-
     data = data.drop(columns=["data_referencia", "ticker", "codigo_cvm", "demonstrativo_id", "nome_demonstrativo"])
-
-    
     data = variation(data, columns=["wc"])
 
     GPOA = [] # (Receita - Custos)/ativo_médio 
@@ -81,11 +78,12 @@ def process_data(df=pd.DataFrame()):
         ACC.append(   (data["depreciacao"].iloc[i] - data["wc"].iloc[i] ) / data["ativos"].iloc[i])                                                     if data["ativos"].iloc[i]  != 0 else ACC.append(0)
         GMAR.append(  (data["receita"].iloc[i] - data["custos"].iloc[i] ) / data["receita"].iloc[i])                                                   if data["receita"].iloc[i] != 0 else GMAR.append(0)
 
-    result = data[["ROE", "ROA"]]
+    result = pd.DataFrame(data[["ROE", "ROA"]])
     result["GPOA"] = GPOA 
     result["CFOA"] = CFOA 
     result["GMAR"] = GMAR 
     result["ACC"]  = ACC
+
     return result
 
 def variation(df, columns):
@@ -93,34 +91,34 @@ def variation(df, columns):
     for c in columns:
         aux = []
         for i in range(1, df.shape[0]):
-            aux.append( df[c].iloc[i] - df[c].iloc[i-1] )
+            aux.append( df[c].iloc[i] / df[c].iloc[i-1] -1 )
         result[c] = [0]+aux
     return result
 
 def ITR(data, columns):
     result = data.copy()
-    for c in columns:
-        aux = []
-        for i in range(data.shape[0]):
-            if i >= 3 and util.get_month(data[c].index[i]) == 12:
-                aux.append( data[c].iloc[i] - data[c].iloc[i-1] - data[c].iloc[i-2] - data[c].iloc[i-3])
-            else:
-                aux.append( data[c].iloc[i] )
-        result[c] = aux
+    if data["sector_id"].iloc[0] != 2:
+        for c in columns:
+            aux = []
+            for i in range(data.shape[0]):
+                if i >= 3 and util.get_month(data[c].index[i]) == 12:
+                    aux.append( data[c].iloc[i] - data[c].iloc[i-1] - data[c].iloc[i-2] - data[c].iloc[i-3])
+                else:
+                    aux.append( data[c].iloc[i] )
+            result[c] = aux
     return result
 
-def LTM(data, columns, compute_itr = True):
+def LTM(data, columns):
     result = data.copy()
-    if compute_itr:
-        data = ITR(data, columns)
-    for c in columns:
-        aux = []
-        for i in range(data.shape[0]):
-            if i >= 3:
-                aux.append( data[c].iloc[i] + data[c].iloc[i-1] + data[c].iloc[i-2] + data[c].iloc[i-3] )
-            else:
-                aux.append( sum(data[c].iloc[0:i].tolist()) )
-        result[c] = aux
+    if data["sector_id"].iloc[0] != 2:
+        for c in columns:
+            aux = []
+            for i in range(data.shape[0]):
+                if i >= 3:
+                    aux.append( data[c].iloc[i] + data[c].iloc[i-1] + data[c].iloc[i-2] + data[c].iloc[i-3] )
+                else:
+                    aux.append( sum(data[c].iloc[0:i].tolist()) )
+            result[c] = aux
     return result
 
 def z(df):
