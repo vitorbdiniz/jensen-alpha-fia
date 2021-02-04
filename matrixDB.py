@@ -61,10 +61,10 @@ def get_equity(environment = "prod", verbose = False):
 
 
 
-def get_profitability_data(environment = "prod", verbose = False):
+def get_quality_data(environment = "prod", verbose = False):
     query = open(realpath("./SQL/qmj_profitability.sql"), 'r').read()
     profit = execute_sql(query, environment=environment, verbose=verbose)
-    profit = profit.rename(columns={0:"codigo_cvm",  1:"ticker",  2:"data_referencia",  3:"demonstrativo_id", 4: "nome_demonstrativo",5:"ativos",  6:"receita",  7:"custos", 8:"ROE",  9:"ROA",  10:"depreciacao", 11:"wc"})    
+    profit = profit.rename(columns={0:"codigo_cvm",  1:"ticker", 2:"sector_id", 3:"data_referencia",  4:"demonstrativo_id", 5: "nome_demonstrativo",6:"ativos",  7:"receita",  8:"custos", 9:"ROE",  10:"ROA",  11:"depreciacao", 12:"wc", 13:"capex"})    
     profit["ticker"] = [x.replace("$", "") for x in profit["ticker"]]
     return profit
 
