@@ -96,6 +96,7 @@ def carteiraLiquidity(prices, amostra_aprovada, quantile, verbose=False):
         
         liquidez_periodo = []
         for ticker in amostra_aprovada.columns:
+            
             if amostra_aprovada[ticker].loc[periodo]:
                 liquidez_periodo.append(prices[ticker]["Volume"].loc[periodo])
             else:
