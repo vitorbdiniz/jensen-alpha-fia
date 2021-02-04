@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import datetime as dt
+
 from scipy.stats import zscore
 from statistics import mean
 
@@ -30,32 +31,38 @@ def get_quality(prices, amostra_aprovada, verbose=0):
         i+=1
         data = pd.DataFrame(df[df["ticker"]==ticker])
         if data.shape[0] == 0:
-            print(ticker + " não apresentou res")
+            print(ticker + " não apresentou resultados")
             continue
-        indicadores_profitability = process_data( data )
-        profitability = get_profitability(indicadores_profitability, verbose=verbose)
-        quality[ticker] = profitability
-        #growth = get_growth(data,amostra_aprovada, verbose) #z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
+        indicadores = process_data( data )
+        
+        profitability = get_profitability(indicadores)
+        growth = get_growth(indicadores)
+        
+        quality[ticker] = growth
+
         #safety = get_safety(data,amostra_aprovada, verbose) #z(zbab + zlev + zo + zz + zevol)
         #quality[ticker] = calculate_quality(profitabiliy, growth, safety, verbose)
     exit(quality)
     return quality
 
-def get_profitability(data, verbose = 0):
+def calculate_quality(profitability, growth, safety, verbose):
+    result = pd.DataFrame()
+    for ticker in profitability.columns:
+        result[ticker] = pd.Series( [mean([profitability[ticker].loc[i], growth[ticker].loc[i], safety[ticker].loc[i]]) for i in profitability.index], index = profitability.index)
+    return result
+
+def get_growth(data):
+    #z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
+    df_var = variation(data, columns=["GPOA", "ROE", "ROA", "CFOA", "GMAR"])
+
+    df_zscores = z(df_var).drop(columns=["ACC"])
+    result = pd.Series( [mean(df_zscores.loc[index].tolist()) for index in df_zscores.index], df_zscores.index)
+    return result
+
+def get_profitability(data):
     df_zscores = z(data)
     result = pd.Series( [mean(df_zscores.loc[index].tolist()) for index in df_zscores.index], df_zscores.index)
 
-    return result
-
-def kill_duplicates(df, check_column="data_referencia"):
-    duplicates = set()
-    checked = set()
-    for i in df.index:
-        if df[check_column].loc[i] not in checked:
-            checked.add( df[check_column].loc[i] )
-        else:
-            duplicates.add(i)
-    result = df.drop(labels=duplicates, axis="index")
     return result
 
 def process_data(df=pd.DataFrame()):
@@ -86,13 +93,21 @@ def process_data(df=pd.DataFrame()):
 
     return result
 
+def kill_duplicates(df, check_column="data_referencia"):
+    duplicates = set()
+    checked = set()
+    for i in df.index:
+        if df[check_column].loc[i] not in checked:
+            checked.add( df[check_column].loc[i] )
+        else:
+            duplicates.add(i)
+    result = df.drop(labels=duplicates, axis="index")
+    return result
+
 def variation(df, columns):
     result = df.copy()
     for c in columns:
-        aux = []
-        for i in range(1, df.shape[0]):
-            aux.append( df[c].iloc[i] / df[c].iloc[i-1] -1 )
-        result[c] = [0]+aux
+        result[c] = [0]+ [df[c].iloc[i] / df[c].iloc[i-1] -1 if df[c].iloc[i-1] != 0 else 0  for i in range(1, df.shape[0])]
     return result
 
 def ITR(data, columns):
