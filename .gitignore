@@ -25,12 +25,8 @@ Manifest.toml
 
 
 #Arquivos csv 
-data/prices/
+data/
 
 #PyCache
 __pycache__/
 
-#rascunhos
-data/alphas/check/
-data/alphas/regression_tables/
-notes/
