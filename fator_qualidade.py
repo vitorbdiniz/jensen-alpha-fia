@@ -9,22 +9,23 @@ import matrixDB
 import util
 import padding as pad
 
-def carteiraQuality(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), verbose=0):
+def carteiraQuality(prices, amostra_aprovada, betas, quantile, start= dt.date.today(), end= dt.date.today(), verbose=0):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "quality" ou "junk" de acordo com ... (Ver Buffett's Alpha)
     '''
-    quality_indexes = get_quality(prices, amostra_aprovada, verbose=verbose)
+    quality_indexes = get_quality(prices, betas, verbose=verbose)
 
 
 
     #TODO
-    return
+    return quality_indexes
 
-def get_quality(prices, amostra_aprovada, verbose=0):
+def get_quality(prices, betas, verbose=0):
     quality = pd.DataFrame()
 
     #df = matrixDB.get_quality_data(verbose=verbose)
     df = pd.read_csv("./data/profit.csv", index_col=0)
+
     i=1
     for ticker in prices.keys():
         pad.verbose(str(i)+". Calculando indicador de qualidade de "+ str(ticker) + " ---- restam "+str(len(prices.keys())-i), level=4, verbose=verbose)
@@ -37,13 +38,42 @@ def get_quality(prices, amostra_aprovada, verbose=0):
         
         profitability = get_profitability(indicadores)
         growth = get_growth(indicadores)
-        
-        quality[ticker] = growth
+        safety = get_safety(data,betas[ticker], verbose=verbose) #z(zbab + zlev + zo + zz + zevol)
+        quality[ticker] = calculate_quality(profitability, growth, safety, verbose)
 
-        #safety = get_safety(data,amostra_aprovada, verbose) #z(zbab + zlev + zo + zz + zevol)
-        #quality[ticker] = calculate_quality(profitabiliy, growth, safety, verbose)
     exit(quality)
     return quality
+
+
+
+def get_safety(data, betas, verbose=0):
+    """
+        We compute a safety z-score by averaging z-scores of low beta (BAB), low leverage (LEV), 
+        low bankruptcy risk (Ohlson’s O and Altman’s Z), and low earnings volatility (EVOL):
+                            safety = z(zbab + zlev + zo + zz + zevol)
+    """
+    
+    zBAB = lambda betas : pd.Series( zscore([ -x for x in betas]) , betas.index) #Calcula o zscore dos BABs segundo o artigo QMJ (BAB = -beta)
+    bab = zBAB(betas)
+    lev = zLeverage()
+    zo = zO()
+    zz = zZ()
+    zevol = zEvol()
+    
+    return
+
+def zLeverage():
+    """
+        LEV is minus total debt (the sum of long-term debt, short-term
+        debt, minority interest, and preferred stock) over total assets: 
+                    lev = −(DLTT + DLC + MIBT + PSTK) / AT
+    """
+    result = pd.Series()
+
+
+    return result
+
+
 
 def calculate_quality(profitability, growth, safety, verbose):
     result = pd.DataFrame()
@@ -54,19 +84,15 @@ def calculate_quality(profitability, growth, safety, verbose):
 def get_growth(data):
     #z (zΔgpoa + zΔroe + zΔroa + zΔcfoa + zΔgmar)
     df_var = variation(data, columns=["GPOA", "ROE", "ROA", "CFOA", "GMAR"])
-
-    df_zscores = z(df_var).drop(columns=["ACC"])
-    result = pd.Series( [mean(df_zscores.loc[index].tolist()) for index in df_zscores.index], df_zscores.index)
-    return result
+    return get_profitability(df_var)
 
 def get_profitability(data):
     df_zscores = z(data)
     result = pd.Series( [mean(df_zscores.loc[index].tolist()) for index in df_zscores.index], df_zscores.index)
-
     return result
 
 def process_data(df=pd.DataFrame()):
-    data = kill_duplicates(df)
+    data = util.kill_duplicates(df, "data_referencia")
     data.index = data["data_referencia"]
 
     data = ITR(data, columns=["receita", "custos"])
@@ -93,16 +119,7 @@ def process_data(df=pd.DataFrame()):
 
     return result
 
-def kill_duplicates(df, check_column="data_referencia"):
-    duplicates = set()
-    checked = set()
-    for i in df.index:
-        if df[check_column].loc[i] not in checked:
-            checked.add( df[check_column].loc[i] )
-        else:
-            duplicates.add(i)
-    result = df.drop(labels=duplicates, axis="index")
-    return result
+
 
 def variation(df, columns):
     result = df.copy()
