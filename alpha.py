@@ -5,17 +5,44 @@ import statsmodels.api as sm
 from statsmodels.tools import add_constant
 from scipy.stats import zscore
 
+from sklearn.model_selection import cross_validate
+from sklearn.base import BaseEstimator, RegressorMixin
+
+
 import fundos_investimento as FI
+import padding as pad
 import util
 
-def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum", "fator_beta", "fator_qualidade"], verbose=False):
+
+
+class SMWrapper(BaseEstimator, RegressorMixin):
+    """ 
+        A universal sklearn-style wrapper for statsmodels regressors
+    """
+    def __init__(self, model_class, fit_intercept=True):
+        self.model_class = model_class
+        self.fit_intercept = fit_intercept
+    def fit(self, X, y):
+        self.model_ = self.model_class(y, X)
+        self.results_ = self.model_.fit()
+    def predict(self, X):
+        return self.results_.predict(X)
+    def get_stats(self):
+        return self.results_.params.tolist() + self.results_.tvalues.tolist() + self.results_.pvalues.tolist() + [self.results_.fvalue]+[self.results_.f_pvalue]+[self.results_.rsquared_adj]
+    def summary(self):
+        return self.results_.summary()
+
+
+
+
+def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum", "fator_beta", "fator_qualidade"], verbose=0):
     """
         Calcula o Alfa de Jensen para os fundos fornecidos, a partir dos fatores previamente calculados
 
         Retorna um pandas.DataFrame com colunas: "Nome", "alfa" e os betas solicitados
     """
-    if verbose:
-        print("Calculando alfas dos fundos de investimento")
+    pad.verbose("Calculando alfas dos fundos de investimento", level=2, verbose=verbose)
+
     columns = get_columns(fatores)
     alphas = dict()
     if type(portfolios_returns) == type(pd.DataFrame()):
@@ -23,34 +50,49 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
     i=1
     for each_fund in portfolios_returns:
         df = pd.DataFrame(columns=columns)
-        if verbose:
-            print(str(i)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " ---- faltam "+str(len(portfolios_returns.keys())-i))
-        
+        pad.verbose(str(i)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " ---- faltam "+str(len(portfolios_returns.keys())-i), level=5, verbose=verbose)        
         data = preprocess_dates(portfolios_returns[each_fund], risk_factors)
-        for j in range(10, data.shape[0]):
-            if verbose:
-                print(str(i)+"."+str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j))
 
-            df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores, each_fund)
+        for j in range(10, data.shape[0]):
+            pad.verbose(str(i)+"."+str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j), level=4, verbose=verbose)
+            df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores, each_fund, verbose=verbose)
             alphas[each_fund] = df
         i+=1
     return alphas
 
-def get_factor_exposition(df, fatores, name="portfolio"):
+def get_factor_exposition(df, fatores, name="portfolio", persist=True, verbose=0):
     """
         Realiza a regressão com base nos retornos do portfólio e nos fatores de risco calculados
 
         retorna uma lista: alfa + betas + tvalores + pvalores + fvalor + pvalor do fvalor + R² ajustado
     """
     data = preprocess_data(df, fatores)
-    X = add_constant(data[fatores])
-    y = data[["cotas"]]
-
-    regr = sm.OLS(y,X).fit(use_t=True)
-
-    util.write_file(path="./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt", data=str(regr.summary()) )
+    regr = linear_regression(data, factors=fatores, target=["cotas"], test_size=0, cv=0, verbose=verbose, persist=persist)
     
-    return regr.params.tolist() + regr.tvalues.tolist() + regr.pvalues.tolist() + [regr.fvalue]+[regr.f_pvalue]+[regr.rsquared_adj]
+    if persist:
+        util.write_file(path="./data/alphas/regression_tables/tabela_"+str(name)+": "+str(data.index[-1]) + ".txt", data=str(regr.summary()) )
+
+    return regr.get_stats()
+
+def linear_regression(data, factors, target, test_size = 0.1, cv=0, verbose=0, persist=False):
+    X = add_constant(data[factors])
+    y = data[target]
+    if cv == 0 and test_size == 0:
+        return sm.OLS(X,y).fit(t_use=True)
+
+    model = SMWrapper(sm.OLS)
+    regr = cross_validate(estimator=model, X=X, y=y, cv=7, n_jobs=-1, return_estimator=True, verbose=0)
+    
+    best_model_score, index = -9999999,0
+    for i in range(len(regr["test_score"])):
+        if regr["test_score"][i] > best_model_score:
+            best_model_score = regr["test_score"][i]
+            index = i
+    best_model = regr["estimator"][index]
+    return best_model
+
+
+
 
 '''
     FUNÇÕES AUXILIARES
