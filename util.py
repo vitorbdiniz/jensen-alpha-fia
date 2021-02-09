@@ -307,3 +307,24 @@ def write_file(path, data):
     f.write(data) 
     f.close()
     return
+
+
+def kill_duplicates(df, check_column="index"):
+    if check_column == "index":
+        validate = list(df.index)
+    else:
+        validate = list(df[check_column])
+    
+    df["index"] = df.index
+    df.index = range(0, len(df.index))
+
+    ( duplicates, checked ) = ( set(), set() )
+    for i in df.index:
+        if validate[i] not in checked:
+            checked.add( validate[i] )
+        else:
+            duplicates.add(i)
+    result = df.drop(labels=duplicates, axis="index")
+    result.index = result["index"]
+    result.drop(columns="index", inplace=True)
+    return result
