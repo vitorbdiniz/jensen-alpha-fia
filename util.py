@@ -315,7 +315,7 @@ def kill_duplicates(df, check_column="index"):
     else:
         validate = list(df[check_column])
     
-    df["index"] = df.index
+    df["index"] = df.index.copy()
     df.index = range(0, len(df.index))
 
     ( duplicates, checked ) = ( set(), set() )
@@ -326,5 +326,9 @@ def kill_duplicates(df, check_column="index"):
             duplicates.add(i)
     result = df.drop(labels=duplicates, axis="index")
     result.index = result["index"]
-    result.drop(columns="index", inplace=True)
+    result = result.drop(columns="index")
     return result
+
+
+def trailing_sum(array, period = 12):
+    return [ sum(array[0:i]) for i in range(period)] + [sum(array[i-period:i]) for i in range(period, len(array))]
