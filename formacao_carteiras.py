@@ -13,15 +13,17 @@ from fator_qualidade import carteiraQuality
 
 def forma_carteiras(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
 
-    quality   = carteiraQuality(prices, amostra_aprovada, quantile, start, end, verbose)
+    #betas = getBeta(prices, amostra_aprovada,start, end, verbose)
+    #betas.to_csv("./data/alphas/betas.csv")
+    #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)
 
     size      = carteiraSize(prices, amostra_aprovada, quantile, start, end, freq,verbose)
     value     = carteiraValue(prices, amostra_aprovada, quantile, start, end, freq, verbose)
     liquidity = carteiraLiquidity(prices, amostra_aprovada, quantile, verbose)
     momentum  = carteiraMomentum(prices, amostra_aprovada, quantile, start, end, verbose)
-    BAB       = carteiraBeta(prices, amostra_aprovada, quantile, start, end, years = 3, verbose=verbose)
-
-    carteiras = consolidaCarteiras(value, size, liquidity, momentum, BAB, verbose=verbose)
+    #BAB       = carteiraBeta(prices, amostra_aprovada, betas, quantile, start, end, years = 3, verbose=verbose)
+    #quality   = carteiraQuality(prices, amostra_aprovada, betas, quantile, start, end, verbose)
+    carteiras = consolidaCarteiras(value, size, liquidity, momentum, verbose=verbose)
     return carteiras
 
 def carteiraValue(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
@@ -135,15 +137,12 @@ def carteiraMomentum(prices, amostra_aprovada, quantile, start= dt.date.today(),
 
     return momentum
 
-def carteiraBeta(prices, amostra_aprovada, quantile, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
+def carteiraBeta(prices, amostra_aprovada, betas,quantile, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
     '''
         Classifica cada ativo por período (diário, trimestral ou anual) em "high_beta" ou "low_beta" de acordo com o beta
     '''
     pad.verbose("Montando carteiras de beta", level=3, verbose=verbose)
 
-    betas = getBeta(prices, amostra_aprovada,start, end, verbose)
-    betas.to_csv("./data/alphas/betas.csv")
-    #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)    
     carteira_beta = pd.DataFrame(index=amostra_aprovada.index, columns=amostra_aprovada.columns)
     i = 1
     for period in amostra_aprovada.index:
@@ -185,7 +184,7 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
         for d in utilDays:
             d = str(d)
             if j < 21 or d not in dates:
-                betas.loc[d] = None
+                betas.loc[d] = 0
                 if d in dates:
                     j+=1
                 continue
@@ -230,7 +229,7 @@ def consolidaCarteiras(value, size, liquidity, momentum, beta=pd.DataFrame(), qu
     consolidada["size"]      = size
     consolidada["liquidity"] = liquidity
     consolidada["momentum"]  = momentum
-    consolidada["beta"]      = beta
+    #consolidada["beta"]      = beta
     #consolidada["quality"]   = quality
     
     
@@ -254,7 +253,7 @@ def classificar(lista, q, acima, abaixo):
         elif each != None and each != 0 and each < inf:
             result.append(abaixo)
         else:
-            result.append(None)
+            result.append("out")
     return result
 
 '''
