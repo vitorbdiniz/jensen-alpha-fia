@@ -1,4 +1,4 @@
-SELECT indicadores_qmj.codigo_cvm, indicadores_qmj.ticker, indicadores_qmj.data_referencia, indicadores_qmj.demonstrativo_id, contas_qmj.nome_demonstrativo,
+SELECT indicadores_qmj.codigo_cvm, indicadores_qmj.ticker, indicadores_qmj.sector_id, indicadores_qmj.data_referencia, indicadores_qmj.demonstrativo_id, contas_qmj.nome_demonstrativo,
 contas_qmj.ativos, contas_qmj.receita, contas_qmj.custos, 
 indicadores_qmj.ROE, indicadores_qmj.ROA, indicadores_qmj.depreciacao, indicadores_qmj.wc, indicadores_qmj.capex
 FROM (
@@ -33,21 +33,23 @@ FROM (
 	ORDER BY C.codigo_cvm, C.data_periodo
 ) AS contas_qmj
 
+
+
 JOIN (
 
-		SELECT roe.num,roe.codigo_cvm, roe.ticker, roe.data_referencia, roe.demonstrativo_id,
+		SELECT roe.num,roe.codigo_cvm, roe.sector_id,roe.ticker, roe.data_referencia, roe.demonstrativo_id,
 				roe.valor AS ROE, roa.valor AS ROA, dna.valor AS depreciacao, wc.valor AS wc, cx.valor AS capex
 		FROM (# roe JOIN roa JOIN d&a JOIN wc JOIN capex
 		((
 			(
 				#ROE
-				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, ticker, data_referencia, demonstrativo_id,indicador, valor
+				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, sector_id, ticker, data_referencia, demonstrativo_id,indicador, valor
 				FROM indicadores
 				WHERE consolidado = 2  AND indicador="ROE"
 				ORDER BY codigo_cvm, demonstrativo_id
 			) AS roe JOIN (
 				#ROA
-				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, ticker, data_referencia, demonstrativo_id,indicador, valor
+				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, sector_id, ticker, data_referencia, demonstrativo_id,indicador, valor
 				FROM indicadores
 				WHERE consolidado = 2  AND
 				indicador="ROA"
@@ -55,7 +57,7 @@ JOIN (
 			) AS roa ON roe.num=roa.num
 		) JOIN (
 				#D&A
-				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, ticker, data_referencia, demonstrativo_id, valor
+				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, sector_id, ticker, data_referencia, demonstrativo_id, valor
 				FROM indicadores
 				WHERE consolidado = 2 AND
 				indicador="(+) Depreciação e Amortização" #IN ("ROE", "ROA", "(+) Depreciação e Amortização", '(-) Investimento em Capital de Giro Líquido')
@@ -63,13 +65,13 @@ JOIN (
 				) AS dna ON dna.num=roe.num
 		) JOIN (
 				#WC
-				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, ticker, data_referencia, demonstrativo_id, valor
+				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, sector_id, ticker, data_referencia, demonstrativo_id, valor
 				FROM indicadores
 				WHERE consolidado = 2 AND
 				indicador="(-) Investimento em Capital de Giro Líquido"
 		) AS wc ON wc.num = roe.num
 		) JOIN (
-				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, ticker, data_referencia, demonstrativo_id, valor
+				SELECT ROW_NUMBER() OVER (ORDER BY codigo_cvm, data_referencia) AS num, codigo_cvm, sector_id, ticker, data_referencia, demonstrativo_id, valor
 				FROM indicadores
 				WHERE consolidado = 2 AND indicador='(-) CAPEX'
 				ORDER BY codigo_cvm, data_referencia
