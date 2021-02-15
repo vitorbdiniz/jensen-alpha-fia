@@ -46,30 +46,30 @@ def get_prices_from_yahoo(tickers, start, end, verbose, freq):
     for t in tickers:
         pad.verbose(str(i) + ". Buscando preços de " + str(t) + " ---- faltam " + str(len(tickers)-i), level=5, verbose=verbose)
         i+=1
+
         try:
-            if t[0] != '^':
-                prices[t] = web.get_data_yahoo(t+".SA", start, end)
-            else:
-                prices[t] = web.get_data_yahoo(t, start, end)
-            prices[t] = resample_prices(prices[t], freq)
+            ticker = t if t[0] == '^' else str(t+".SA").upper()
+            prices[t] = web.get_data_yahoo(ticker, start, end)
+            prices[t] = apply_frequency(prices[t], freq)
         except:
             if verbose:
                 print("------- Ação não encontrada")
     return prices
 
-def resample_prices(prices, freq):
+
+
+def apply_frequency(prices, freq):
+    freq_dict = {"D":1, "M":30, "Q":90,"Y":250}
+    prices_result = prices.copy()
 
     liquid_days = [1 if prices["Volume"].loc[date] > 0 else 0   for date in prices.index]
-    prices["liquid_days"] = liquid_days
-
-    volume = prices["Volume"].resample(freq[0].upper()).sum()
-    liquid_days = prices["liquid_days"].resample(freq[0].upper()).sum()
-
-    prices_result = prices.resample(freq[0].upper()).pad()
-
-    prices_result["Volume"] = volume
+    liquid_days = util.trailing_sum(liquid_days, period=freq_dict[str(freq[0]).upper()])
+    liquid_days = [x / freq_dict[str(freq[0]).upper()] for x in liquid_days]
     prices_result["liquid_days"] = liquid_days
-    prices_result.index = [str(x.date()) for x in list(prices_result.index)]
+
+    prices_result["Volume"] = util.trailing_sum(prices["Volume"], period=freq_dict[str(freq[0]).upper()])
+
+    prices_result.index = [x.date() for x in list(prices_result.index)]
 
     return prices_result
 
