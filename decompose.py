@@ -45,7 +45,7 @@ def decompose_by_factors(betas, factors, index, fac_index_0):
         except:
             print("Premium: ", premium_avg, type(premium_avg))
             print("Beta "+str(col)+": ", betas[col].loc[index], type(betas[col].loc[index]))
-            exit(1)
+            
     return decomposition
 		
     

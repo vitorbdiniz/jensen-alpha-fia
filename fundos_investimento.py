@@ -21,7 +21,7 @@ def preprocess_fis(fundos=pd.DataFrame(), freq="daily", verbose = False):
         if verbose:
             if fundos["fundo"].loc[i] != codigo:
                 codigo = fundos["fundo"].loc[i]
-                print(str(j) + ". Pré-processando dados de " +fundos["fundo"].loc[i])
+                print(str(j) + ". Pré-processando dados de " +str(fundos["fundo"].loc[i]))
                 j += 1
         row = fundos.loc[i]
         if fundos["fundo"].loc[i] not in fis:

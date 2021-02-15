@@ -16,7 +16,7 @@ def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= s
     fatores["fator_valor"]    = calculate_factor(carteiras["value"], returns, factor_name="valor", nome_carteira1="high", nome_carteira2="low",  verbose=verbose)
     fatores["fator_liquidez"] = calculate_factor(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira1="iliquid", nome_carteira2="liquid",  verbose=verbose)
     fatores["fator_momentum"] = calculate_factor(carteiras["momentum"], returns, factor_name="momentum", nome_carteira1="winner", nome_carteira2="loser",  verbose=verbose)
-    fatores["fator_beta"]     = calculate_factor(carteiras["beta"], returns, factor_name="beta", nome_carteira1="low_beta", nome_carteira2="high_beta",  verbose=verbose)
+    #fatores["fator_beta"]     = calculate_factor(carteiras["beta"], returns, factor_name="beta", nome_carteira1="low_beta", nome_carteira2="high_beta",  verbose=verbose)
     #fatores["QMJ"] = calculate_factor(carteiras["quality"], returns, factor_name="qualidade", nome_carteira1="junk", nome_carteira2="quality",  verbose=verbose)
 
     return fatores
@@ -78,3 +78,19 @@ def calculate_factor(carteiras, returns, factor_name, nome_carteira1, nome_carte
         print("-------------------------------------------------------------------------------------------")
     pd.DataFrame(factor, index=dates).to_csv("./data/fatores/"+factor_name+".csv")
     return pd.Series(factor, index=dates)
+
+
+def test_factors():
+    concat_date = lambda date : [str(dt.date(date[0].iloc[i], date[1].iloc[i], date[2].iloc[i])) for i in range(len(date[0]))]#convert a list of years, months and dates into a list of dates
+
+    mkt = pd.read_excel("http://nefin.com.br/Risk%20Factors/Market_Factor.xls") 
+    hml = pd.read_excel("http://nefin.com.br/Risk%20Factors/HML_Factor.xls")    
+    smb = pd.read_excel("http://nefin.com.br/Risk%20Factors/SMB_Factor.xls")    
+    wml = pd.read_excel("http://nefin.com.br/Risk%20Factors/WML_Factor.xls")    
+    iml = pd.read_excel("http://nefin.com.br/Risk%20Factors/IML_Factor.xls")    
+
+    risk_factors = pd.DataFrame({"year":mkt["year"], "month":mkt["month"], "day":mkt["day"], "fator_mercado" : mkt["Rm_minus_Rf"], "fator_valor" : hml["HML"], "fator_tamanho" : smb["SMB"],"fator_momentum" : wml["WML"],"fator_liquidez" : iml["IML"]})
+    risk_factors.index = concat_date([risk_factors["year"], risk_factors["month"], risk_factors['day']])
+    risk_factors = risk_factors.drop(columns=["year", "month", "day"])
+
+    return risk_factors
