@@ -1,6 +1,6 @@
 def define_matrix_env(env):
     if env == "prod" or env == "producao" or env == "produção":
-        host = "10.55.192.17"
+        host = "10.55.192.42"
         user = "vitor.diniz"
         password = "-uV3Fg*yA^xh?2VR&tAu6LH"
         dbname = "tc_matrix"
