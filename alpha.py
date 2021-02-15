@@ -42,7 +42,6 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
         Retorna um pandas.DataFrame com colunas: "Nome", "alfa" e os betas solicitados
     """
     pad.verbose("Calculando alfas dos fundos de investimento", level=2, verbose=verbose)
-
     columns = get_columns(fatores)
     alphas = dict()
     if type(portfolios_returns) == type(pd.DataFrame()):
@@ -53,7 +52,7 @@ def jensens_alpha(risk_factors, portfolios_returns, fatores=["fator_mercado","fa
         pad.verbose(str(i)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " ---- faltam "+str(len(portfolios_returns.keys())-i), level=5, verbose=verbose)        
         data = preprocess_dates(portfolios_returns[each_fund], risk_factors)
 
-        for j in range(10, data.shape[0]):
+        for j in range(20, data.shape[0]):
             pad.verbose(str(i)+"."+str(j)+". Calculando alfa do Fundo " + str(portfolios_returns[each_fund]["fundo"].iloc[0]) + " para o dia " + str(data.index[j]) + "---- faltam "+str(len(data.index)-j), level=4, verbose=verbose)
             df.loc[data.index[j]] = get_factor_exposition(data.iloc[0:j+1], fatores, each_fund, verbose=verbose)
             alphas[each_fund] = df
@@ -77,18 +76,19 @@ def get_factor_exposition(df, fatores, name="portfolio", persist=True, verbose=0
 def linear_regression(data, factors, target, test_size = 0.1, cv=0, verbose=0, persist=False):
     X = add_constant(data[factors])
     y = data[target]
-    if cv == 0 and test_size == 0:
-        return sm.OLS(X,y).fit(t_use=True)
-
     model = SMWrapper(sm.OLS)
-    regr = cross_validate(estimator=model, X=X, y=y, cv=7, n_jobs=-1, return_estimator=True, verbose=0)
-    
-    best_model_score, index = -9999999,0
-    for i in range(len(regr["test_score"])):
-        if regr["test_score"][i] > best_model_score:
-            best_model_score = regr["test_score"][i]
-            index = i
-    best_model = regr["estimator"][index]
+    if cv != 0 or test_size != 0:
+        regr = cross_validate(estimator=model, X=X, y=y, cv=7, n_jobs=-1, return_estimator=True, verbose=0)
+        
+        best_model_score, index = -9999999,0
+        for i in range(len(regr["test_score"])):
+            if regr["test_score"][i] > best_model_score:
+                best_model_score = regr["test_score"][i]
+                index = i
+        best_model = regr["estimator"][index]
+    else:
+        model.fit(X,y)
+        best_model = model
     return best_model
 
 
@@ -101,6 +101,7 @@ def linear_regression(data, factors, target, test_size = 0.1, cv=0, verbose=0, p
 
 
 def preprocess_data(data, fatores):
+    data = util.kill_duplicates(data, "index")
     data = outlier_treatment(data, method="iqr", quantile=0.25, mult=1.5)
     return data
 
@@ -171,12 +172,12 @@ def preprocess_dates(fundo, fatores):
             fator_valor      += [fatores.loc[fundo["data"].iloc[i]]["fator_valor"]]
             fator_liquidez   += [fatores.loc[fundo["data"].iloc[i]]["fator_liquidez"]]
             fator_momentum   += [fatores.loc[fundo["data"].iloc[i]]["fator_momentum"]]
-            fator_beta      += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
+            #fator_beta      += [fatores.loc[fundo["data"].iloc[i]]["fator_beta"]]
             #fator_qualidade += [fatores.loc[fundo["data"].iloc[i]]["fator_qualidade"]]
 
 
             dates += [fundo["data"].iloc[i]]
             nome += [fundo["fundo"].iloc[i]]
 
-    result = pd.DataFrame({"cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum, "fator_beta":fator_beta}, index=dates)
+    result = pd.DataFrame({"cotas": cotas, "fator_mercado": fator_mercado, "fator_tamanho": fator_tamanho, "fator_valor": fator_valor, "fator_liquidez" : fator_liquidez, "fator_momentum" : fator_momentum},index=dates)#, "fator_beta":fator_beta}, index=dates)
     return result.drop(labels=result.index[0], axis="index")
