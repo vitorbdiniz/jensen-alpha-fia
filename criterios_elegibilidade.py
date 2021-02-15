@@ -92,12 +92,9 @@ def criterio_maior_liquidez(prices, start = dt.date.today(), end = dt.date.today
     return criterion2
 
 def getMostLiquidTicker(prices, tickers, period):
-    liquidity = {}
-
-    for t in tickers:
-        liq = prices[t]["Volume"].loc[period] if period in prices[t].index else 0
-        liquidity[t] = liq
+    liquidity = {t : prices[t]["Volume"].loc[period]*prices[t]["liquid_days"].loc[period] if period in prices[t].index else 0   for t in tickers}
     highest = list(liquidity.keys())[0]
+
     for t in liquidity:
         if liquidity[highest] < liquidity[t]:
             highest = t
