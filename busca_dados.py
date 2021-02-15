@@ -10,7 +10,7 @@ import padding as pad
 
 
 
-def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = False, get_from="yahoo", freq="daily"):
+def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = 0, get_from="yahoo", freq="daily"):
     '''
         Busca cotações de uma lista de ativos para um determinado intervalo de tempo
 
