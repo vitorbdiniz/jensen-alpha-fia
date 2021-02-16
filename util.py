@@ -83,7 +83,7 @@ def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
     return res
 
 
-def getUtilDays(start, end):
+def getUtilDays(start, end, form="date"):
     '''
         Busca dias úteis em um intervalo dado
     '''
@@ -92,9 +92,9 @@ def getUtilDays(start, end):
     try:
         url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
         selic = pd.read_csv(url, sep=";")
-        util = list(datesReformat(selic["data"], toUsual=False))
+        util = list(datesReformat(selic["data"], toUsual=False, form="date"))
     except:
-        util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False))
+        util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False, form=form))
     return util
 
 
@@ -170,26 +170,20 @@ def reformatDecimalPoint(commaNumberList, to="."):
     return [float(commaNumber.replace(",", to)) for commaNumber in commaNumberList]
 
 
-def dateReformat(date, toUsual=True):
+def dateReformat(date, toUsual=True, form="str"):
     if toUsual:
         d = str(date).split('-')[::-1]
         d = d[0] + "/" + d[1] + "/" + d[2]
     else:
         d = str(date).split("/")[::-1]
-        d = d[0] + "-" + d[1] + "-" + d[2]
+        if form == "str":
+            d = d[0] + "-" + d[1] + "-" + d[2]
+        elif form == "date":
+            d = dt.date(d[0], d[1], d[2])
     return d
 
-def mean_annual_return(array):
-    cosmos = cumulative_return(array)
-    daily_return_cosmos = (cosmos[-1]+1)**(1/len(cosmos))-1
-    annual_return_cosmos = (daily_return_cosmos+1)**(250)-1
-    return annual_return_cosmos    
-
-
-def datesReformat(dates, toUsual=True):
-    res = []
-    for date in dates:
-        res += [dateReformat(date, toUsual)]
+def datesReformat(dates, toUsual=True, form="str"):
+    res = [dateReformat(date, toUsual, form=form) for date in dates]
     return res
 
 
@@ -197,6 +191,13 @@ def getYears(start, end):
     s = int(start[0:4])
     e = int(end[0:4])
     return [i for i in range(s, e+1)]
+
+
+def mean_annual_return(array):
+    cosmos = cumulative_return(array)
+    daily_return_cosmos = (cosmos[-1]+1)**(1/len(cosmos))-1
+    annual_return_cosmos = (daily_return_cosmos+1)**(250)-1
+    return annual_return_cosmos    
 
 
 def transform(date, freq):
@@ -216,6 +217,9 @@ def get_day(date):
 
 def get_year(date):
     return int(date[0:4])    
+
+def str_to_date(string):
+    return dt.date(year=get_year(string), month=get_month(string), day=get_day(string))
 
 def count_month_days(dates):
     result = []
@@ -237,7 +241,7 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
         freq == "daily" or freq == "monthly" or freq == "quarterly" or freq == "annually"
     '''
     if freq == "daily":
-        index = getUtilDays(str(start), str(end))
+        index = getUtilDays(start, end)
         days_number = [1 for i in index]
     elif freq =="monthly":
         index = getUtilDays(str(start), str(end))
