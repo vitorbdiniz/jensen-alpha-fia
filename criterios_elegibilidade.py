@@ -17,24 +17,36 @@ def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today
     liquidez_minima = criterio_liquidez_minima(prices, index, start, end, liquidez_min, criterion, verbose)
     pad.verbose("line", level=5, verbose=verbose)
 
+
     maior_liquidez = criterio_maior_liquidez(prices, index, start, end, verbose)
     pad.verbose("line", level=5, verbose=verbose)
-    
+
+
     listagem = criterio_listagem(prices, index, start, end, verbose)
     pad.verbose("line", level=5, verbose=verbose)
+    
 
     criterios = intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose)
 
+    liquidez_minima.to_csv("./data/criterios/criterio_liquidez_minima.csv")
+    listagem.to_csv("./data/criterios/criterio_listagem.csv")
+    maior_liquidez.to_csv("./data/criterios/criterio_maior_liquidez.csv")
+    
     return criterios
 
 
 def criterio_liquidez_minima(prices, index, start = dt.date.today(), end = dt.date.today(), liquidez_min = 500000, criterion = 0.8, verbose = 0):    
+    """
+            The stock was traded in more than 80% of the days in year t-1 with volume
+        greater than R$ 500.000,00 per day. In case the stock was listed in year t-1, the
+        period considered goes from the listing day to the last day of the year;
+    """
+
     pad.verbose("- Aplicação do critério de liquidez mínima -", level=3, verbose=verbose)
 
-    eleitos = {q: [] for q in index}
+    aprovados = {q: set() for q in index}
     set_index = set(index)
     util_days = util.days_per_year(index)
-    print(util_days)
     i = 1
 
     for ticker in prices.keys():
@@ -43,16 +55,18 @@ def criterio_liquidez_minima(prices, index, start = dt.date.today(), end = dt.da
         days = util.days_per_year(prices[ticker].index)
         mean_liq = util.mean_liquidity_per_year(prices[ticker]["Volume"], days)
         for q in prices[ticker].index:
-            if q in set_index and q.year-1 in days and days[q.year-1] > criterion * util_days[q.year-1] and mean_liq[q.year-1] >= liquidez_min:
-                eleitos[q] += [ticker]
-    
-    return elegibility_dataframe(prices, eleitos)
+            if q in set_index and q.year-1 in days and days[q.year-1] >= criterion * util_days[q.year-1] and mean_liq[q.year-1] >= liquidez_min:
+                aprovados[q].add(ticker)
+    return elegibility_dataframe(prices, aprovados)
     
 
         
 def criterio_maior_liquidez(prices, index, start = dt.date.today(), end = dt.date.today(), verbose = False):
+    """
+        The stock is the most traded stock of the firm (the one with the highest traded volume during last year);
+    """
     pad.verbose("- Aplicando o critério do ticker de maior liquidez -", level=3, verbose=verbose)
-    elegibilidade_tickers = {q:[] for q in index}
+    aprovados = {q:set() for q in index}
     done = set()
     i = 1
     for ticker in prices:
@@ -61,37 +75,52 @@ def criterio_maior_liquidez(prices, index, start = dt.date.today(), end = dt.dat
         pad.verbose(str(i)+". Aplicando critério de ticker de maior liquidez em "+ ticker + " ---- faltam "+str(len(prices)-i), level=5, verbose=verbose)
         cia_tickers = util.findSimilar(ticker, list(prices.keys()))
         i+=len(cia_tickers)
-        for q in elegibilidade_tickers:
+
+        if len(cia_tickers) > 1:
+            volumes = { cia : util.total_liquidity_per_year(prices[cia]["Volume"], date_array = None) for cia in cia_tickers }
+            most_liq = getMostLiquidTicker(volumes)
+        for q in aprovados:
             if len(cia_tickers) == 1:
-                elegibilidade_tickers[q] += [ticker]
-            else:
-                elegibilidade_tickers[q] += [getMostLiquidTicker(prices, cia_tickers, q)]
+                aprovados[q].add(ticker)
+            elif q.day in most_liq:
+                aprovados[q].add(most_liq[q.year])
         done = done.union({t for t in cia_tickers})   
-    criterion2 = elegibility_dataframe(prices, elegibilidade_tickers)
-    return criterion2
+    
+    return elegibility_dataframe(prices, aprovados)
 
-def getMostLiquidTicker(prices, tickers, period):
-    liquidity = {t : prices[t]["Volume"].loc[period]*prices[t]["liquid_days"].loc[period] if period in prices[t].index else 0   for t in tickers}
-    highest = list(liquidity.keys())[0]
-    for t in liquidity:
-        if liquidity[highest] < liquidity[t]:
-            highest = t
-    return highest
+def getMostLiquidTicker(volumes_per_year = dict()):
+    most_liq = dict()
+    highest_liq_year = dict()
 
+    for ticker in volumes_per_year.keys():
+        for y in volumes_per_year[ticker].keys():
+            if y not in most_liq:
+                most_liq[y] = ticker
+                highest_liq_year[y] = volumes_per_year[ticker][y]
+            elif volumes_per_year[ticker][y] > highest_liq_year[y]:
+                most_liq[y] = ticker
+                highest_liq_year[y] = volumes_per_year[ticker][y]   
+    return most_liq
 
-def criterio_listagem(prices, index, start = dt.date.today(), end = dt.date.today(), freq = "daily",verbose = 0):
+def criterio_listagem(prices, index, start = dt.date.today(), end = dt.date.today(), verbose = 0):
+    """
+        The stock was initially listed prior to December of year t-1
+
+    """
     pad.verbose("- Aplicando critério de listagem -", level=3, verbose=verbose)
 
-    elegibilidade_listagem = {q:[] for q in index}
+    aprovados = {q:set() for q in index}
     i = 1
     for ticker in prices:
         pad.verbose(str(i)+". Aplicando critério de listagem em "+ ticker + " ---- faltam "+str(len(prices)-i), level=5, verbose=verbose)
         i += 1
-        for t in index:
-            if prices[ticker].index[0] <= t :
-                elegibilidade_listagem[t].append(ticker)
-    criterio3 = elegibility_dataframe(prices, elegibilidade_listagem)
-    return criterio3
+        found_december = False
+        for d in prices[ticker].index:
+            if (d.month == 12 or found_december) and (d in aprovados):
+                aprovados[d].add(ticker)
+                found_december = True
+
+    return elegibility_dataframe(prices, aprovados)
 
 
 def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=0):
@@ -116,7 +145,6 @@ def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=0):
 
 def elegibility_dataframe(prices, dic):
     df = pd.DataFrame()
-
     for ticker in prices.keys():
         aux = [True if ticker in dic[q] else False for q in dic.keys() ]
         df[ticker] = pd.Series(aux, index=list(dic.keys()))
