@@ -5,8 +5,14 @@ import numpy as np
 import util
 import padding as pad
 
-def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), liquidez_min = 0, criterion = 0.8, verbose = 0):
-    index = util.get_frequency(start, end)[0]
+def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today(), liquidez_min = 500000, criterion = 0.8, verbose = 0):
+    """
+        Verifica se os ativos estão de acordo com os critérios de elegibilidade propostos pelo Nefin
+        http://nefin.com.br/methodology.html
+
+        Retorna DataFrame com valor True se o ativo passar nos critérios de elegibilidade para aquele dia, False caso contrário
+    """
+    index = util.getUtilDays(start, end)
 
     liquidez_minima = criterio_liquidez_minima(prices, index, start, end, liquidez_min, criterion, verbose)
     pad.verbose("line", level=5, verbose=verbose)
@@ -22,25 +28,28 @@ def criterios_elegibilidade(prices, start = dt.date.today(), end = dt.date.today
     return criterios
 
 
-def criterio_liquidez_minima(prices, index, start = dt.date.today(), end = dt.date.today(), liquidez_min = 0, criterion = 0.8, verbose = 0):    
+def criterio_liquidez_minima(prices, index, start = dt.date.today(), end = dt.date.today(), liquidez_min = 500000, criterion = 0.8, verbose = 0):    
     pad.verbose("- Aplicação do critério de liquidez mínima -", level=3, verbose=verbose)
 
     eleitos = {q: [] for q in index}
-    days = set(index)
+    set_index = set(index)
+    util_days = util.days_per_year(index)
+    print(util_days)
     i = 1
 
     for ticker in prices.keys():
         pad.verbose(str(i) + ". Aplicando critério de liquidez mínima em " + ticker + " ---- faltam " + str(len(prices.keys())-i), level=5, verbose=verbose)
         i+=1
+        days = util.days_per_year(prices[ticker].index)
+        mean_liq = util.mean_liquidity_per_year(prices[ticker]["Volume"], days)
         for q in prices[ticker].index:
-            if q in days and prices[ticker]["liquid_days"].loc[q] >= criterion and prices[ticker]["Volume"].loc[q] > liquidez_min:
+            if q in set_index and q.year-1 in days and days[q.year-1] > criterion * util_days[q.year-1] and mean_liq[q.year-1] >= liquidez_min:
                 eleitos[q] += [ticker]
     
     return elegibility_dataframe(prices, eleitos)
     
 
-
-
+        
 def criterio_maior_liquidez(prices, index, start = dt.date.today(), end = dt.date.today(), verbose = False):
     pad.verbose("- Aplicando o critério do ticker de maior liquidez -", level=3, verbose=verbose)
     elegibilidade_tickers = {q:[] for q in index}
