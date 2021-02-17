@@ -2,6 +2,7 @@
 import datetime as dt
 import pandas as pd
 import pandas_datareader as web
+import warnings
 
 #Workspace libs
 import matrixDB
@@ -48,7 +49,6 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
             ticker = t if t[0] == '^' else str(t+".SA").upper()
             prices[t] = web.get_data_yahoo(ticker, start, end)
             prices[t].index = [x.date() for x in list(prices[t].index)]
-            #prices[t] = apply_frequency(prices[t], freq)
         except:
             if verbose:
                 print("------- Ação não encontrada")
@@ -99,23 +99,4 @@ def get_stockid(stockid, ticker):
             return stockid["Id"].iloc[i]
     return -1
 
-def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False):
-    pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
-    start = util.dateReformat(str(start))
-    end = util.dateReformat(str(end))
-    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
 
-    selic = pd.read_csv(url, sep=";")
-    
-    if "valor" in selic.columns:
-        selic["valor"] = [ x/100 for x in util.reformatDecimalPoint(selic["valor"], to=".")]
-        selic.index = util.datesReformat(selic["data"], False)
-        selic = pd.DataFrame({"valor":list(selic["valor"])}, index = selic.index)
-    else:
-        Warning("Servidor não retornou taxa Selic. Utilizando dados antigos.")
-        selic = pd.read_csv("./data/selic.csv", sep=";")
-
-    if persist:
-        selic.to_csv("./data/selic.csv")
-    pad.verbose("line", level=5, verbose=verbose)
-    return selic

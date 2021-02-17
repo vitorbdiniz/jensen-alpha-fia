@@ -3,6 +3,7 @@ import pandas as pd
 import datetime as dt
 import pandas_datareader as web
 
+import padding as pad
 
 def getQuarter(date):
     '''
@@ -87,15 +88,40 @@ def getUtilDays(start, end, form="date"):
     '''
         Busca dias úteis em um intervalo dado
     '''
-    start = dateReformat(start)
-    end = dateReformat(end)
-    try:
-        url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ start +"&dataFinal="+end
-        selic = pd.read_csv(url, sep=";")
-        util = list(datesReformat(selic["data"], toUsual=False, form="date"))
-    except:
-        util = list(datesReformat(pd.read_csv("./data/selic.csv", sep=";")["data"], toUsual=False, form=form))
+    selic = getSelic(start, end)
+    util = list(selic.index)
+    if form == "str":
+        util = [str(x) for x in util]
     return util
+
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False):
+    pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
+    start = dateReformat(str(start))
+    end = dateReformat(str(end))
+
+    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ str(start) +"&dataFinal="+str(end)
+
+    start = dateReformat(str(start), toUsual=False, form="date")
+    end = dateReformat(str(end), toUsual=False, form="date")
+
+    try:
+        selic = pd.read_csv(url, sep=";")
+    except:
+        selic = pd.DataFrame()
+
+    if "valor" in selic.columns:
+        selic["valor"] = [ x/100 for x in reformatDecimalPoint(selic["valor"], to=".")]
+        selic.index = datesReformat(selic["data"], False)
+        selic = pd.DataFrame({"valor":list(selic["valor"])}, index = selic.index)
+    else:
+        selic = pd.read_csv("./data/selic.csv", index_col=0)
+        selic.index = [dt.date(year=int(d[0:4]), month=int(d[5:7]), day=int(d[8:10])) for d in selic.index]
+        selic = selic.loc[start:end]
+
+    if persist:
+        selic.to_csv("./data/selic.csv")
+    pad.verbose("line", level=5, verbose=verbose)
+    return selic
 
 
 def count_quarter_days(start, end):
@@ -133,7 +159,6 @@ def count_year_days(dates):
         Conta dias úteis existentes em uma lista de datas
     '''
 
-
     res = []
     days = 0
     year = dates[0][0:4]
@@ -147,6 +172,25 @@ def count_year_days(dates):
 
     return res + [days]
 
+def days_per_year(date_array):
+    result = dict()
+    for d in date_array:
+        result[d.year] = result[d.year] + 1 if d.year in result else 1
+    return result
+
+def total_liquidity_per_year(volume, date_array = None):
+    if date_array == None:
+        date_array = days_per_year(volume.index)
+    result = dict()
+    for d in volume.index:
+        result[d.year] = result[d.year] + volume.loc[d] if d.year in result else volume.loc[d]
+    return result
+
+
+def mean_liquidity_per_year(volume, date_array = None):
+    result = total_liquidity_per_year(volume, date_array)
+    result = {year : result[year]/date_array[year]   if year in result else 0   for year in date_array}
+    return result
 
 def getCode(ticker):
     ind = -1
@@ -170,7 +214,7 @@ def reformatDecimalPoint(commaNumberList, to="."):
     return [float(commaNumber.replace(",", to)) for commaNumber in commaNumberList]
 
 
-def dateReformat(date, toUsual=True, form="str"):
+def dateReformat(date, toUsual=True, form="date"):
     if toUsual:
         d = str(date).split('-')[::-1]
         d = d[0] + "/" + d[1] + "/" + d[2]
@@ -179,10 +223,10 @@ def dateReformat(date, toUsual=True, form="str"):
         if form == "str":
             d = d[0] + "-" + d[1] + "-" + d[2]
         elif form == "date":
-            d = dt.date(d[0], d[1], d[2])
+            d = dt.date(int(d[0]), int(d[1]), int(d[2]))
     return d
 
-def datesReformat(dates, toUsual=True, form="str"):
+def datesReformat(dates, toUsual=True, form="date"):
     res = [dateReformat(date, toUsual, form=form) for date in dates]
     return res
 
