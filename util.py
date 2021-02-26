@@ -66,6 +66,18 @@ def getYear(str_date):
     '''
     return int(str_date[0:4])
 
+def date_range(start, end, frequency="D"):
+    for each in [start, end]:
+        if type(start) == dt.date:
+            each = dt.datetime(each.year, each.month, each.day)
+    if frequency == "D":
+       result = pd.DatetimeIndex([start + dt.timedelta(days=i) for i in range( (end-start).days+1 )])
+    elif frequency == "Y":
+       result = pd.DatetimeIndex([ dt.date(i, 1, 1) for i in range( start.year, end.year+1 )])
+    
+    else:
+        raise AttributeError("'frequency'")
+    return result
 
 def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
     '''
@@ -117,6 +129,8 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persis
         selic = pd.read_csv("./data/selic.csv", index_col=0)
         selic.index = [dt.date(year=int(d[0:4]), month=int(d[5:7]), day=int(d[8:10])) for d in selic.index]
         selic = selic.loc[start:end]
+
+    selic.index = pd.DatetimeIndex(selic.index)
 
     if persist:
         selic.to_csv("./data/selic.csv")
@@ -265,6 +279,10 @@ def get_year(date):
 def str_to_date(string):
     return dt.date(year=get_year(string), month=get_month(string), day=get_day(string))
 
+def list_str_to_list_dates(str_list):
+    return [str_to_date(s) for s in list(str_list)]
+
+
 def count_month_days(dates):
     result = []
     n = 0
@@ -380,3 +398,20 @@ def kill_duplicates(df, check_column="index"):
 
 def trailing_sum(array, period = 12):
     return [ sum(array[0:i]) for i in range(period)] + [sum(array[i-period:i]) for i in range(period, len(array))]
+
+
+"""
+        PANDAS SERIES
+
+"""
+
+def eliminate_duplicates_indexes(serie):
+    index = []
+    check_indexes = set()
+    values = []
+    for i in serie.index:
+        if i not in check_indexes:
+            index += [i]
+            values += [serie.loc[i]]
+            check_indexes.add(i)
+    return pd.Series(values, index)
