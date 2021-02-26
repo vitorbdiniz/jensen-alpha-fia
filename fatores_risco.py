@@ -30,6 +30,9 @@ def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=st
     Rm = util.getReturns(ibov)
     Rf = busca_dados.getSelic(start, end)
 
+    print(Rm)
+    print(Rf)
+    exit(1)
     mkt = []
     dates = []
     i = 1

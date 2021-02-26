@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 
 #Comunicação com sistema
-from busca_dados import get_prices
+from busca_dados import get_prices, rearange_prices
 from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco, test_factors
@@ -30,39 +30,35 @@ def main():
 	##Tempo
 	start = dt.date(2010, 1, 1)
 	end = dt.date.today()
-	freq = "monthly"
 
-	##Liquidez
-	liquidez_min = 0.1 #elimina 
+	##Liquidez 
 	criterio_liquidez = 0.8 #liquidez em 80% dos períodos
-	media_periodo = 21
 
 	##Fonte
 	get_from="yahoo"
 
 	#parâmetros adicionais
-	quantile = 0.25
+	quantile = 0.25 #quartile
 	fatores=["fator_mercado","fator_tamanho","fator_valor","fator_liquidez","fator_momentum"]#,"fator_beta"]#, "fator_qualidade"]
-	verbose = 5
+	verbose = 5 # 0 a 5
 	persist = True
-	test = False
+	test = True
 
 
 	pad.verbose("- INICIANDO PROCEDIMENTO DE BUSCA DE COTAÇÕES -", level=1, verbose=verbose)
 	pad.verbose("- "+ str( int(now()/60) ) +" minutes-", level=2, verbose=verbose)
 
-	#Algoritmo
 
 	#### Busca preços de ações
-
 	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
 		prices = dict()
 		for ticker in tickers:
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
+			prices[ticker].index = pd.DatetimeIndex([util.str_to_date(x) for x in prices[ticker].index])
 	else:
 		tickers = "all"
-		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from, freq=freq)
+		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
 		
 		pad.verbose("- "+ str( now()/60 ) +" minutes-", level=2, verbose=verbose)
 
@@ -78,29 +74,32 @@ def main():
 	pad.verbose("- INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA -", level=1, verbose=verbose)
 	
 	if test:
-		amostra_aprovada = pd.read_csv("./data/criterios/amostra_aprovada.csv", index_col=0)		
+		amostra_aprovada = pd.read_csv("./data/criterios/amostra_aprovada.csv", index_col=0)
+		amostra_aprovada.index = pd.DatetimeIndex([util.str_to_date(x) for x in amostra_aprovada.index])	
+
 	else:
-		amostra_aprovada = criterios_elegibilidade(prices, start, end, freq, liquidez_min, criterio_liquidez, media_periodo, persist, verbose)
+		amostra_aprovada = criterios_elegibilidade(prices, start = start, end = end, criterion = criterio_liquidez, verbose = verbose)
 		pad.verbose("- "+ str( now()/60 ) +" minutes-", level=2, verbose=verbose)
 		if persist:
 			pad.verbose("-- Persistindo preços. Não interrompa a execução. --", level=2, verbose=verbose)
 			amostra_aprovada.to_csv("./data/criterios/amostra_aprovada.csv")
 			pad.verbose("-- OK", level=2, verbose=verbose)
 
+	prices = rearange_prices(prices, start, end, column = "Adj Close")
 
 	pad.verbose("- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS -", level=1, verbose=verbose)
 
 	#### Forma carteiras para cada período
-	if test:
+	if False:
 		carteiras = dict()
 		carteiras["value"] = pd.read_csv("./data/carteiras/value.csv", index_col=0)
 		carteiras["size"] = pd.read_csv("./data/carteiras/size.csv", index_col=0)
 		carteiras["liquidity"] = pd.read_csv("./data/carteiras/liquidity.csv", index_col=0)
 		carteiras["momentum"] = pd.read_csv("./data/carteiras/momentum.csv", index_col=0)
-		carteiras["beta"] = pd.read_csv("./data/carteiras/beta.csv", index_col=0)
+		#carteiras["beta"] = pd.read_csv("./data/carteiras/beta.csv", index_col=0)
 		#carteiras["quality"] = pd.read_csv("./data/carteiras/quality.csv", index_col=0)
 	else:
-		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, freq, verbose)
+		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, verbose)
 		pad.verbose("- "+ str( now()/60 ) +" minutes-", level=2, verbose=verbose)
 		if persist:
 			pad.verbose("-- Persistindo carteiras --", level=2, verbose=verbose)
@@ -108,10 +107,26 @@ def main():
 				carteiras[carteira].to_csv("./data/carteiras/"+ carteira +".csv")
 			pad.verbose("-- OK", level=2, verbose=verbose)
 
+
+	exit(carteiras)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	#### Calculando fatores de risco
 	pad.verbose("- INICIANDO PROCEDIMENTO DE CÁLCULO DE FATORES DE RISCO -", level=5, verbose=verbose)
 
-	if test:
+	if False:
 		
 		fatores_risco = test_factors()
 		fatores_risco.to_csv("./data/fatores/risk_factors.csv")
@@ -137,7 +152,7 @@ def main():
 		for fund in fis:
 			fis[fund].to_csv("./data/alphas/check/"+str(fund)+".csv")
 
-	if True:
+	if test:
 		alphas = dict()
 		alphas['CONSTELLATION INSTITUCIONAL FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO DE AÇÕES'] = pd.read_csv("./data/alphas/CONSTELLATION INSTITUCIONAL FUNDO DE INVESTIMENTO EM COTAS DE FUNDOS DE INVESTIMENTO DE AÇÕES.csv", index_col=0)
 		alphas['ALASKA BLACK INSTITUCIONAL FUNDO DE INVESTIMENTO DE ACOES'] = pd.read_csv("./data/alphas/ALASKA BLACK INSTITUCIONAL FUNDO DE INVESTIMENTO DE ACOES.csv", index_col=0)	

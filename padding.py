@@ -14,7 +14,7 @@ def verbose(msg, level, verbose=0):
     return
 
 def get_line():
-    return "-------------------------------------------------------------------------------------------"
+    return "-"*91
 
 def betwen_lines(msg):
     s = 91 - len(msg)

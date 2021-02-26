@@ -3,8 +3,13 @@ import sqlalchemy as sql
 
 import pandas as pd
 import numpy as np
+import datetime as dt
+
 from os.path import realpath
 from env import define_matrix_env
+
+import util
+import padding as pad
 
 class SQLError(RuntimeError):
     def __init__(self, expression, message):
@@ -35,18 +40,25 @@ def execute_sql(query,environment = "prod", verbose=False):
     return df
 
 '''
+
 funções de abstração da conexão com o BD 
+
 '''
 
 def get_tickers(environment = "prod", verbose = False):
     query = open(realpath("./SQL/getTickers.sql"), 'r').read()
     return execute_sql(query, environment=environment, verbose=verbose)
 
+
+
 def get_stocks_quantity(environment = "prod", verbose = False):
     query = open(realpath("./SQL/stocks.sql"), 'r').read()
     stocks = execute_sql(query, environment=environment, verbose=verbose)
+
     stocks[0] = [x.replace("$", "") for x in stocks[0]]
+    stocks.rename(columns={0:"codigo_negociacao", 1:"data_referencia", 2:"release_date", 3:"ordinarias", 4:"preferenciais", 5:"totais"}, inplace=True)
     return stocks
+
 
 def get_account(account, environment = "prod", verbose = False):
     query = open(realpath("./SQL/stocks.sql"), 'r').read()
