@@ -1,6 +1,9 @@
+USE TC_LABS_risk_factors;
+
 #basic dimensions
 CREATE TABLE time_dimension(
 	id INT NOT NULL AUTO_INCREMENT,
+    date_ date,
     year INT,
     month INT,
     day INT,
@@ -22,12 +25,11 @@ CREATE TABLE ticker_dimension(
     PRIMARY KEY(id)
 );
 
-# Dimensions
-
+# Other Dimensions
 CREATE TABLE prices(
 	id INT NOT NULL AUTO_INCREMENT,
 	time_id INT NOT NULL,
-	ticker_id VARCHAR(8) NOT NULL,
+	ticker_id INT NOT NULL,
     
     high FLOAT,
     low FLOAT,
@@ -35,18 +37,8 @@ CREATE TABLE prices(
 	close FLOAT,
     volume FLOAT,
     adj_close FLOAT,
-    liquid_days FLOAT,
     
-    PRIMARY KEY(id),
-    FOREIGN KEY(time_id) 
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(ticker_id) 
-		REFERENCES ticker_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-    
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE risk_factors(
@@ -61,12 +53,7 @@ CREATE TABLE risk_factors(
     fator_bab DOUBLE,
     fator_qualidade DOUBLE,
     
-    PRIMARY KEY(id),
-    FOREIGN KEY(time_id) 
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE criteria(
@@ -78,15 +65,7 @@ CREATE TABLE criteria(
     listagem BOOLEAN,
     maior_liquidez BOOLEAN,
 
-    PRIMARY KEY(id),
-    FOREIGN KEY(time_id) 
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(ticker_id) 
-		REFERENCES ticker_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE carteiras(
@@ -101,21 +80,14 @@ CREATE TABLE carteiras(
     carteira_beta VARCHAR(15),
 	carteira_qualidade VARCHAR(15),
 
-    PRIMARY KEY(id),
-    FOREIGN KEY(time_id) 
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(ticker_id) 
-		REFERENCES ticker_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+    PRIMARY KEY(id)
 );
 
 CREATE TABLE funds_performances(
 	id INT NOT NULL AUTO_INCREMENT,
 	time_id INT NOT NULL,
 	fund_id INT NOT NULL,
+
     quote DOUBLE NOT NULL,
     variation DOUBLE NOT NULL,
     captation DOUBLE NOT NULL,
@@ -123,15 +95,7 @@ CREATE TABLE funds_performances(
     investors INT NOT NULL,
 	withdraws DOUBLE NOT NULL,
 
-	PRIMARY KEY(id),
-	FOREIGN KEY(time_id)
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(fund_id) 
-		REFERENCES funds_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+	PRIMARY KEY(id)
 );
 
 CREATE TABLE alphas(
@@ -148,22 +112,11 @@ CREATE TABLE alphas(
     beta_BAB DOUBLE,
     beta_quality DOUBLE,
 
-	PRIMARY KEY(id),
-	FOREIGN KEY(time_id) 
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(fund_id) 
-		REFERENCES funds_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+	PRIMARY KEY(id)
 );
-
 
 CREATE TABLE regression_statistics(
 	id INT NOT NULL AUTO_INCREMENT,
-    fund_id INT NOT NULL,
-    time_id INT NOT NULL,
     alpha_id INT NOT NULL,
     
 	tvalue_alpha DOUBLE NOT NULL,
@@ -186,21 +139,70 @@ CREATE TABLE regression_statistics(
     f_pvalue DOUBLE NOT NULL,
     R_squared_adj DOUBLE NOT NULL,
 
-	PRIMARY KEY(id),
-	FOREIGN KEY(time_id)
-		REFERENCES time_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(fund_id) 
-		REFERENCES funds_dimension(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
-	FOREIGN KEY(alpha_id) 
-		REFERENCES alphas(id)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+	PRIMARY KEY(id)
 );
 
+#Table Relations
 
-
-
+ALTER TABLE prices
+	ADD CONSTRAINT prices_fk_ticker FOREIGN KEY (ticker_id)
+		REFERENCES ticker_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT prices_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE risk_factors
+	ADD CONSTRAINT risk_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;        
+ALTER TABLE criteria
+	ADD CONSTRAINT criteria_fk_ticker FOREIGN KEY (ticker_id)
+		REFERENCES ticker_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT criteria_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE carteiras
+	ADD CONSTRAINT carteiras_fk_ticker FOREIGN KEY (ticker_id)
+		REFERENCES ticker_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT carteiras_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE funds_performances
+	ADD CONSTRAINT performance_fk_fund FOREIGN KEY (fund_id)
+		REFERENCES funds_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT performance_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE alphas
+	ADD CONSTRAINT alpha_fk_fund FOREIGN KEY (fund_id)
+		REFERENCES funds_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT alpha_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE regression_statistics
+	ADD CONSTRAINT regr_fk_alpha FOREIGN KEY (alpha_id)
+		REFERENCES alphas(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
