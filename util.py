@@ -67,9 +67,9 @@ def getYear(str_date):
     return int(str_date[0:4])
 
 def date_range(start, end, frequency="D"):
-    for each in [start, end]:
-        if type(start) == dt.date:
-            each = dt.datetime(each.year, each.month, each.day)
+    
+    start = dt.datetime(start.year, start.month, start.day)
+    end = dt.datetime(end.year, end.month, end.day)
     if frequency == "D":
        result = pd.DatetimeIndex([start + dt.timedelta(days=i) for i in range( (end-start).days+1 )])
     elif frequency == "Y":
