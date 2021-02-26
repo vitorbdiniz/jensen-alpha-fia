@@ -48,7 +48,6 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
         try:
             ticker = t if t[0] == '^' else str(t+".SA").upper()
             prices[t] = web.get_data_yahoo(ticker, start, end)
-            prices[t].index = [x.date() for x in list(prices[t].index)]
         except:
             if verbose:
                 print("------- Ação não encontrada")
@@ -98,5 +97,10 @@ def get_stockid(stockid, ticker):
         if stockid["InternalSymbol"].iloc[i] == ticker:
             return stockid["Id"].iloc[i]
     return -1
+
+
+def rearange_prices(prices, start=dt.date(2010,1,1), end=dt.date.today(), column = "Adj Close"):
+    return pd.DataFrame({ ticker : prices[ticker][column] for ticker in prices.keys() }, index=util.date_range(start, end, frequency="D"))
+    
 
 
