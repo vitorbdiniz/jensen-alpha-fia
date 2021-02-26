@@ -142,8 +142,13 @@ def intersecao_criterios(liquidez_minima, maior_liquidez, listagem, verbose=0):
 
 def elegibility_dataframe(prices, dic):
     df = pd.DataFrame()
+    if type(list(dic.keys())[0]) == int:
+        index = pd.DatetimeIndex([dt.date(int(y), 1, 1) for y in dic.keys()])
+    else:
+        index = dic.keys()
+
     for ticker in prices.keys():
         aux = [True if ticker in dic[q] else False for q in dic.keys() ]
-        df[ticker] = pd.Series(aux, index=list(dic.keys()))
+        df[ticker] = pd.Series(aux, index=index)
     return df
 
