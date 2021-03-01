@@ -15,7 +15,7 @@ def get_liquidities(volumes, dates, tickers, verbose=0):
     pad.verbose("- Verificando os volumes -", level=2, verbose=verbose)
 
     tickers = set(volumes.columns)
-    get_company_liquidities = lambda volumes, ticker, verbose : [ util.total_liquidity_per_year(volumes, form="Series", year_form="datetime"),  pad.verbose(f"Verificando liquidez de {ticker}", level=5, verbose=verbose)][0]
+    get_company_liquidities = lambda volumes, ticker, verbose : [ total_liquidity_per_year(volumes, form="Series", year_form="datetime"),  pad.verbose(f"Verificando liquidez de {ticker}", level=5, verbose=verbose)][0]
     liquidities = pd.DataFrame({ ticker : get_company_liquidities(volumes[ticker], ticker, verbose)   for ticker in volumes    if ticker in tickers}, index = dates)
 
     return liquidities

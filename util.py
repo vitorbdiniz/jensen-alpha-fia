@@ -330,13 +330,22 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
 
 """
 
-def getReturns(prices):
-    r = [prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
-    returns = pd.DataFrame({"returns":[None]+r}, index=prices.index)
+def getReturns(prices, form="DataFrame"):
+    if type(prices) == type(pd.DataFrame({})):
+        r = [0]+[prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
+    elif type(prices) == type(pd.Series({1:1})):
+        r = [0]+[prices.iloc[i] / prices.iloc[i-1] -1 for i in range(1, len(prices.index))]
+
+    if form == "DataFrame":
+        returns = pd.DataFrame({"returns":r}, index=prices.index)
+    elif form == "Series":
+        returns = pd.Series(r, index=prices.index)
+
     return returns
     
 def allReturns(prices = dict()):
     return {ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
+
 
 def cumulative_return(retornos):
     capital = 1
