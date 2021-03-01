@@ -5,138 +5,72 @@ import pandas_datareader as web
 
 import padding as pad
 
-def getQuarter(date):
-    '''
-        Converte string de data para formato trimestral.
 
-        Ex.: getQuarter("2020-05-22") -> "2T2020"
-        Ex.: getQuarter("2001-11-09T00:12:45Z") -> "4T2001"
-    '''
-    d = str(date).split("-")  # d[0] == year; d[1] == month; d[2] == day
-    if int(d[1]) <= 3:
-        q = "1"
-    elif int(d[1]) <= 6:
-        q = "2"
-    elif int(d[1]) <= 9:
-        q = "3"
+
+
+
+
+"""
+
+    DICTIONARIES AND DATAFRAMES
+
+"""
+
+def rearange_prices(prices, start=dt.date(2010,1,1), end=dt.date.today(), column = "Adj Close"):
+    return pd.DataFrame({ ticker : prices[ticker][column] for ticker in prices.keys() }, index=date_range(start, end, frequency="D"))
+
+def kill_duplicates(df, check_column="index"):
+    if check_column == "index":
+        validate = list(df.index)
     else:
-        q = "4"
-    return q + "T" + d[0]
-
-
-def compareQuarters(q1, q2):
-    '''
-        Compara 2 trimestres.
-
-        Ex.: compareQuarters("2T2020", "1T2020") -> 1
-        Ex.: compareQuarters("1T2001", "4T2000") -> -1
-    '''
-
-    firstQ = q1.split("T")
-    lastQ = q2.split("T")
-    return 4*(int(firstQ[1]) - int(lastQ[1])) + (int(firstQ[0]) - int(lastQ[0]))
-
-def compareTime(t1, t2, freq):
-    if freq == "quarterly":
-        res = compareQuarters(t1, t2)
-    elif freq == "annually":
-        res = t1-t2
-    elif freq == "daily" or "monthly":
-        res = (dt.date(int(t1[0:4]), int(t1[5:7]), int(t1[8:10])) - dt.date(int(t2[0:4]), int(t2[5:7]), int(t2[8:10]))).days
-    else:
-        raise AttributeError("Frequência não estipulada corretamente")
-    return res
-
-def getNextPeriod(time, freq):
-    if freq == "quarterly":
-        res = nextQuarter(time)
-    elif freq == "annually":
-        res = int(time)+1
-    elif freq == "daily":
-        res = str(dt.date(int(time[0:4]), int(time[5:7]), int(time[8:10]))+ dt.timedelta(days=1))
-    else:
-        raise AttributeError("Frequência não estipulada corretamente")
-    return res
-
-def getYear(str_date):
-    '''
-        retorna o ano de uma data
-
-        Ex.: getYear("2005-01-05") -> 2005
-    '''
-    return int(str_date[0:4])
-
-def date_range(start, end, frequency="D"):
+        validate = list(df[check_column])
     
-    start = dt.datetime(start.year, start.month, start.day)
-    end = dt.datetime(end.year, end.month, end.day)
-    if frequency == "D":
-       result = pd.DatetimeIndex([start + dt.timedelta(days=i) for i in range( (end-start).days+1 )])
-    elif frequency == "Y":
-       result = pd.DatetimeIndex([ dt.date(i, 1, 1) for i in range( start.year, end.year+1 )])
-    
-    else:
-        raise AttributeError("'frequency'")
+    df["index"] = df.index.copy()
+    df.index = range(0, len(df.index))
+
+    ( duplicates, checked ) = ( set(), set() )
+    for i in df.index:
+        if validate[i] not in checked:
+            checked.add( validate[i] )
+        else:
+            duplicates.add(i)
+    result = df.drop(labels=duplicates, axis="index")
+    result.index = result["index"]
+    result = result.drop(columns="index")
     return result
 
-def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
-    '''
-        Retorna trimestres existentes em um dado intervalo de datas
-        Ex.: getQuarterRange("2019-11-01", "2020-12-20") -> ["4T2019","1T2020","2T2020","3T2020","4T2020"]
-    '''
 
-    firstQ = getQuarter(start)
-    lastQ = getQuarter(end)
-    res = []
-    for y in range(getYear(start), getYear(end)+1):
-        for q in range(1, 5):
-            quarter = str(q)+"T"+str(y)
-            if compareQuarters(quarter, firstQ) >= 0 and compareQuarters(quarter, lastQ) <= 0:
-                res.append(quarter)
-    return res
+"""
 
+        PANDAS SERIES
 
-def getUtilDays(start, end, form="date"):
-    '''
-        Busca dias úteis em um intervalo dado
-    '''
-    selic = getSelic(start, end)
-    util = list(selic.index)
-    if form == "str":
-        util = [str(x) for x in util]
-    return util
+"""
 
-def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False):
-    pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
-    start = dateReformat(str(start))
-    end = dateReformat(str(end))
+def eliminate_duplicates_indexes(serie):
+    index = []
+    check_indexes = set()
+    values = []
+    for i in serie.index:
+        if i not in check_indexes:
+            index += [i]
+            values += [serie.loc[i]]
+            check_indexes.add(i)
+    return pd.Series(values, index)
 
-    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ str(start) +"&dataFinal="+str(end)
-
-    start = dateReformat(str(start), toUsual=False, form="date")
-    end = dateReformat(str(end), toUsual=False, form="date")
-
+def get_previous_data(series, index):
     try:
-        selic = pd.read_csv(url, sep=";")
+        i = series.index.get_loc(index, method="pad")
     except:
-        selic = pd.DataFrame()
+        i = 0
+        
+    return series.iloc[i]
 
-    if "valor" in selic.columns:
-        selic["valor"] = [ x/100 for x in reformatDecimalPoint(selic["valor"], to=".")]
-        selic.index = datesReformat(selic["data"], False)
-        selic = pd.DataFrame({"valor":list(selic["valor"])}, index = selic.index)
-    else:
-        selic = pd.read_csv("./data/selic.csv", index_col=0)
-        selic.index = [dt.date(year=int(d[0:4]), month=int(d[5:7]), day=int(d[8:10])) for d in selic.index]
-        selic = selic.loc[start:end]
 
-    selic.index = pd.DatetimeIndex(selic.index)
+"""
 
-    if persist:
-        selic.to_csv("./data/selic.csv")
-    pad.verbose("line", level=5, verbose=verbose)
-    return selic
+    TIME MANIPULATION
 
+"""
 
 def count_quarter_days(start, end):
     '''
@@ -192,40 +126,99 @@ def days_per_year(date_array):
         result[d.year] = result[d.year] + 1 if d.year in result else 1
     return result
 
-def total_liquidity_per_year(volume, date_array = None):
-    if date_array == None:
-        date_array = days_per_year(volume.index)
-    result = dict()
-    for d in volume.index:
-        result[d.year] = result[d.year] + volume.loc[d] if d.year in result else volume.loc[d]
+
+def getQuarter(date):
+    '''
+        Converte string de data para formato trimestral.
+
+        Ex.: getQuarter("2020-05-22") -> "2T2020"
+        Ex.: getQuarter("2001-11-09T00:12:45Z") -> "4T2001"
+    '''
+    d = str(date).split("-")  # d[0] == year; d[1] == month; d[2] == day
+    if int(d[1]) <= 3:
+        q = "1"
+    elif int(d[1]) <= 6:
+        q = "2"
+    elif int(d[1]) <= 9:
+        q = "3"
+    else:
+        q = "4"
+    return q + "T" + d[0]
+
+
+def compareQuarters(q1, q2):
+    '''
+        Compara 2 trimestres.
+
+        Ex.: compareQuarters("2T2020", "1T2020") -> 1
+        Ex.: compareQuarters("1T2001", "4T2000") -> -1
+    '''
+
+    firstQ = q1.split("T")
+    lastQ = q2.split("T")
+    return 4*(int(firstQ[1]) - int(lastQ[1])) + (int(firstQ[0]) - int(lastQ[0]))
+
+def compareTime(t1, t2, freq):
+    if freq == "quarterly":
+        res = compareQuarters(t1, t2)
+    elif freq == "annually":
+        res = t1-t2
+    elif freq == "daily" or "monthly":
+        res = (dt.date(int(t1[0:4]), int(t1[5:7]), int(t1[8:10])) - dt.date(int(t2[0:4]), int(t2[5:7]), int(t2[8:10]))).days
+    else:
+        raise AttributeError("Frequência não estipulada corretamente")
+    return res
+
+def getNextPeriod(time, freq):
+    if freq == "quarterly":
+        res = nextQuarter(time)
+    elif freq == "annually":
+        res = int(time)+1
+    elif freq == "daily":
+        res = str(dt.date(int(time[0:4]), int(time[5:7]), int(time[8:10]))+ dt.timedelta(days=1))
+    else:
+        raise AttributeError("Frequência não estipulada corretamente")
+    return res
+
+def date_range(start, end, frequency="D"):
+    
+    start = dt.datetime(start.year, start.month, start.day)
+    end = dt.datetime(end.year, end.month, end.day)
+    if frequency == "D":
+       result = pd.DatetimeIndex([start + dt.timedelta(days=i) for i in range( (end-start).days+1 )])
+    elif frequency == "Y":
+       result = pd.DatetimeIndex([ dt.date(i, 1, 1) for i in range( start.year, end.year+1 )])
+    
+    else:
+        raise AttributeError("'frequency'")
     return result
 
+def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
+    '''
+        Retorna trimestres existentes em um dado intervalo de datas
+        Ex.: getQuarterRange("2019-11-01", "2020-12-20") -> ["4T2019","1T2020","2T2020","3T2020","4T2020"]
+    '''
 
-def mean_liquidity_per_year(volume, date_array = None):
-    result = total_liquidity_per_year(volume, date_array)
-    result = {year : result[year]/date_array[year]   if year in result else 0   for year in date_array}
-    return result
-
-def getCode(ticker):
-    ind = -1
-    for i in range(len(ticker)):
-        if ord(ticker[i]) >= ord('0') and ord(ticker[i]) <= ord('9'):
-            ind = i
-            break
-    return ticker[0:ind]
-
-
-def findSimilar(ticker, ticker_list):
-    code = getCode(ticker).upper()
-    similar = []
-    for t in ticker_list:
-        if code == getCode(t).upper():
-            similar += [t]
-    return similar
+    firstQ = getQuarter(start)
+    lastQ = getQuarter(end)
+    res = []
+    for y in range(get_year(start), get_year(end)+1):
+        for q in range(1, 5):
+            quarter = str(q)+"T"+str(y)
+            if compareQuarters(quarter, firstQ) >= 0 and compareQuarters(quarter, lastQ) <= 0:
+                res.append(quarter)
+    return res
 
 
-def reformatDecimalPoint(commaNumberList, to="."):
-    return [float(commaNumber.replace(",", to)) for commaNumber in commaNumberList]
+def getUtilDays(start, end, form="date"):
+    '''
+        Busca dias úteis em um intervalo dado
+    '''
+    selic = getSelic(start, end)
+    util = list(selic.index)
+    if form == "str":
+        util = [str(x) for x in util]
+    return util
 
 
 def dateReformat(date, toUsual=True, form="date"):
@@ -251,29 +244,39 @@ def getYears(start, end):
     return [i for i in range(s, e+1)]
 
 
-def mean_annual_return(array):
-    cosmos = cumulative_return(array)
-    daily_return_cosmos = (cosmos[-1]+1)**(1/len(cosmos))-1
-    annual_return_cosmos = (daily_return_cosmos+1)**(250)-1
-    return annual_return_cosmos    
 
 
 def transform(date, freq):
     if freq == "quarterly":
         result = getQuarter(str(date))
     elif freq == "annually":
-        result = getYear(str(date))
+        result = get_year(str(date))
     else:
         result = date
     return result
 
 def get_month(date):
+    '''
+        retorna o mês de uma data
+
+        Ex.: get_month("2005-01-05") -> 1
+    '''
     return int(date[5:7])
 
 def get_day(date):
+    '''
+        retorna o dia de uma data
+
+        Ex.: get_day("2005-01-05") -> 5
+    '''
     return int(date[8:10])
 
 def get_year(date):
+    '''
+        retorna o ano de uma data
+
+        Ex.: get_year("2005-01-05") -> 2005
+    '''
     return int(date[0:4])    
 
 def str_to_date(string):
@@ -320,6 +323,13 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
         raise AttributeError("Frequência não estipulada corretamente")
     return index, days_number
 
+
+"""
+
+    RETURNS
+
+"""
+
 def getReturns(prices):
     r = [prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
     returns = pd.DataFrame({"returns":[None]+r}, index=prices.index)
@@ -345,6 +355,100 @@ def avg_return(retornos):
     periods = len(retornos) if len(retornos) % 2 == 1 or acc_return > 0 else len(retornos)-1
     avg = (1+acc_return)**(1/periods)-1
     return avg
+
+def mean_annual_return(array):
+    cosmos = cumulative_return(array)
+    daily_return_cosmos = (cosmos[-1]+1)**(1/len(cosmos))-1
+    annual_return_cosmos = (daily_return_cosmos+1)**(250)-1
+    return annual_return_cosmos    
+
+
+"""
+
+    OUTROS CÁLCULOS
+
+"""
+
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False):
+    pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
+    start = dateReformat(str(start))
+    end = dateReformat(str(end))
+
+    url = "http://api.bcb.gov.br/dados/serie/bcdata.sgs.11/dados?formato=csv&dataInicial="+ str(start) +"&dataFinal="+str(end)
+
+    start = dateReformat(str(start), toUsual=False, form="date")
+    end = dateReformat(str(end), toUsual=False, form="date")
+
+    try:
+        selic = pd.read_csv(url, sep=";")
+    except:
+        selic = pd.DataFrame()
+
+    if "valor" in selic.columns:
+        selic["valor"] = [ x/100 for x in reformatDecimalPoint(selic["valor"], to=".")]
+        selic.index = datesReformat(selic["data"], False)
+        selic = pd.DataFrame({"valor":list(selic["valor"])}, index = selic.index)
+    else:
+        selic = pd.read_csv("./data/selic.csv", index_col=0)
+        selic.index = [dt.date(year=int(d[0:4]), month=int(d[5:7]), day=int(d[8:10])) for d in selic.index]
+        selic = selic.loc[start:end]
+
+    selic.index = pd.DatetimeIndex(selic.index)
+
+    if persist:
+        selic.to_csv("./data/selic.csv")
+    pad.verbose("line", level=5, verbose=verbose)
+    return selic
+
+
+
+
+def total_liquidity_per_year(volume, date_array = None, form = "dic", year_form="int"):
+    if date_array == None:
+        date_array = days_per_year(volume.index)
+    result = dict()
+    for d in volume.index:
+        if pd.isna(volume.loc[d]):
+            volume.loc[d] = 0
+        result[d.year] = result[d.year] + volume.loc[d] if d.year in result else volume.loc[d]
+    
+    if year_form == "datetime":
+        result = { dt.datetime(year=x, month=1, day=1) : result[x] for x in result.keys() }
+
+    if form == "Series":
+        result = pd.Series( [result[x] for x in result.keys()] , index = result.keys())
+        
+
+    return result
+
+
+def mean_liquidity_per_year(volume, date_array = None):
+    result = total_liquidity_per_year(volume, date_array)
+    result = {year : result[year]/date_array[year]   if year in result else 0   for year in date_array}
+    return result
+
+def getCode(ticker):
+    ind = -1
+    for i in range(len(ticker)):
+        if ord(ticker[i]) >= ord('0') and ord(ticker[i]) <= ord('9'):
+            ind = i
+            break
+    return ticker[0:ind]
+
+
+def findSimilar(ticker, ticker_list):
+    code = getCode(ticker).upper()
+    similar = []
+    for t in ticker_list:
+        if code == getCode(t).upper():
+            similar += [t]
+    return similar
+
+
+def reformatDecimalPoint(commaNumberList, to="."):
+    return [float(commaNumber.replace(",", to)) for commaNumber in commaNumberList]
+
+
 
 
 def moving_average(array, period):
@@ -375,43 +479,8 @@ def write_file(path, data):
     return
 
 
-def kill_duplicates(df, check_column="index"):
-    if check_column == "index":
-        validate = list(df.index)
-    else:
-        validate = list(df[check_column])
-    
-    df["index"] = df.index.copy()
-    df.index = range(0, len(df.index))
-
-    ( duplicates, checked ) = ( set(), set() )
-    for i in df.index:
-        if validate[i] not in checked:
-            checked.add( validate[i] )
-        else:
-            duplicates.add(i)
-    result = df.drop(labels=duplicates, axis="index")
-    result.index = result["index"]
-    result = result.drop(columns="index")
-    return result
 
 
 def trailing_sum(array, period = 12):
     return [ sum(array[0:i]) for i in range(period)] + [sum(array[i-period:i]) for i in range(period, len(array))]
 
-
-"""
-        PANDAS SERIES
-
-"""
-
-def eliminate_duplicates_indexes(serie):
-    index = []
-    check_indexes = set()
-    values = []
-    for i in serie.index:
-        if i not in check_indexes:
-            index += [i]
-            values += [serie.loc[i]]
-            check_indexes.add(i)
-    return pd.Series(values, index)
