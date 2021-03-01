@@ -49,8 +49,6 @@ def get_tickers(environment = "prod", verbose = False):
     query = open(realpath("./SQL/getTickers.sql"), 'r').read()
     return execute_sql(query, environment=environment, verbose=verbose)
 
-
-
 def get_stocks_quantity(environment = "prod", verbose = False):
     query = open(realpath("./SQL/stocks.sql"), 'r').read()
     stocks = execute_sql(query, environment=environment, verbose=verbose)
@@ -69,6 +67,8 @@ def get_equity(environment = "prod", verbose = False):
     query = open(realpath("./SQL/getEquity.sql"), 'r').read()
     equity = execute_sql(query, environment=environment, verbose=verbose)
     equity[0] = [x.replace("$", "") for x in equity[0]]
+    equity.rename(columns={0:"codigo_negociacao",1:"codigo_cvm", 2:"demonstrativo_id", 3:"codigo_conta",4:"data_periodo",5:"release_date", 6:"ordinaria", 7:"preferencial", 8:"total", 9:"valor_conta", 10:"VPA"}, inplace=True)
+    
     return equity
 
 

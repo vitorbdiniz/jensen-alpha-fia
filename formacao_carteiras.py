@@ -10,6 +10,9 @@ import util
 import padding as pad
 
 from carteira_tamanho import get_market_caps
+from carteira_valor import get_all_book_to_market
+from carteira_liquidez import get_liquidities
+
 from fator_qualidade import carteiraQuality 
 
 """
@@ -18,20 +21,23 @@ from fator_qualidade import carteiraQuality
 
 """
 
-def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today(), end= dt.date.today(), verbose=0):
+def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today(), end= dt.date.today(), verbose=0, persist=False):
     carteiras = dict()
 
     #betas = getBeta(prices, amostra_aprovada,start, end, verbose)
     #betas.to_csv("./data/alphas/betas.csv")
     #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)
 
-    carteiras['size']       = monta_carteiras("tamanho", "big", "small", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['value']      = monta_carteiras("valor", "high", "low", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['liquidity']  = monta_carteiras("liquidez", "liquid", "iliquid", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    #carteiras['BAB']        = monta_carteiras("bab", "high_beta", "low_beta", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    closing_prices = util.rearange_prices(prices, start, end, column = "Adj Close")
+    volumes = util.rearange_prices(prices, start, end, column = "Volume")
 
+    carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    carteiras['liquidity']  = monta_carteiras("liquidez", "liquid", "iliquid", volumes, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    #carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    #carteiras['BAB']        = monta_carteiras("bab", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    
     return carteiras
 
 """
@@ -39,31 +45,39 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     FORMAÇÃO DE CADA CARTEIRA
 
 """
-def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amostra_aprovada, quantile, start=dt.date(2010, 1, 1), end = dt.date.today(), verbose = 0):
+def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amostra_aprovada, quantile, start=dt.date(2010, 1, 1), end = dt.date.today(), verbose = 0, persist=False):
     """
         Identifica a carteira que deve ser formada e busca o indicador referente a ela
 
         retorna um DataFrame com ativos classificados em uma carteira específica
     """
     pad.verbose(f"- Montando carteiras de {nome_carteira} -", level=2, verbose=verbose)
-    if nome_carteira.lower() == "tamanho" or nome_carteira.lower() == "size":
+    if nome_carteira.lower() == "tamanho" or nome_carteira.lower() == "size" or nome_carteira.lower() == "smb":
         carteira = get_market_caps(prices=prices, dates=amostra_aprovada.index, tickers=amostra_aprovada.columns, verbose=verbose)
-    elif nome_carteira.lower() == "valor" or nome_carteira.lower() == "value":
+    
+    elif nome_carteira.lower() == "valor" or nome_carteira.lower() == "value" or nome_carteira.lower() == "hml":
+        carteira = get_all_book_to_market(prices=prices, dates=amostra_aprovada.index, tickers=amostra_aprovada.columns, verbose=verbose)
+    
+    elif nome_carteira.lower() == "liquidez" or nome_carteira.lower() == "liquidity" or nome_carteira.lower() == "iml":
+        carteira = get_liquidities(volumes=prices, dates=amostra_aprovada.index, tickers=amostra_aprovada.columns, verbose=verbose)
+    
+    elif nome_carteira.lower() == "momento" or nome_carteira.lower() == "momentum" or nome_carteira.lower() == "mom" or nome_carteira.lower() == "wml":
         carteira = 0 #TODO
-    elif nome_carteira.lower() == "liquidez" or nome_carteira.lower() == "liquidity":
-        carteira = 0 #TODO
-    elif nome_carteira.lower() == "momento" or nome_carteira.lower() == "momentum":
-        carteira = 0 #TODO
+    
     elif nome_carteira.lower() == "beta" or nome_carteira.lower() == "bab" or nome_carteira.lower() == "betting against beta":
         carteira = 0 #TODO
+    
     elif nome_carteira.lower() == "quality" or nome_carteira.lower() == "qmj" or nome_carteira.lower() == "qualidade":
         carteira = 0 #TODO
+    
     else:
-        raise AttributeError(f"nome_carteira mal especificado: nome_carteira = {nome_carteira}")
-
+        raise ValueError(f"nome_carteira mal especificado: nome_carteira = {nome_carteira}")
 
     carteira = classificador_df(carteira, amostra_aprovada, q = quantile, acima = carteira_acima, abaixo = carteira_abaixo, verbose=verbose)
-    exit(carteira)    
+
+    if persist:
+        carteira.to_csv(f"./data/carteiras/{nome_carteira}.csv")
+
     pad.verbose('line', level=2, verbose=verbose)
     return carteira
 
@@ -77,89 +91,7 @@ def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amos
 """
 
 
-def to_df(dic, indexes):
-    result = pd.DataFrame(index= indexes)
-    for key in dic:
-        try:
-            result[key] = dic[key]
-        except:
-            result[key] = util.eliminate_duplicates_indexes(dic[key])
-    
-    result.dropna(axis="index", how="all", inplace=True)
 
-    return result
-
-
-
-def get_first_day_of_year(array):
-    result = list()
-    years = set()
-    for d in array:
-        if d.year not in years:
-            result.append( d )
-            years.add(d.year)
-    return result
-
-
-
-def carteiraValue(prices, amostra_aprovada, quantile = 1/3, start= dt.date.today(), end= dt.date.today(), freq="daily", verbose=False):
-    '''
-        Classifica cada ativo por período (diário, trimestral ou anual) em "high" ou "low" de acordo com o múltiplo book-to-market (BM)
-    '''
-    pad.verbose("Montando carteiras de valor", level=3, verbose=verbose)
-
-    i = 1
-    patrimonio_liquido = matrixDB.get_equity(environment="prod", verbose=verbose)
-    value = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
-    for period in amostra_aprovada.index:
-        pad.verbose(str(i)+". Montando carteiras de valor para o período " + str(period) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
-
-        i += 1
-        BM = []
-        for ticker in amostra_aprovada.columns:
-            if amostra_aprovada[ticker].loc[period]:
-                VPA = float(getVPA(patrimonio_liquido, ticker, period, freq))
-                if VPA == 0:
-                    BM.append(0)
-                else:
-                    BM.append( float(prices[ticker]["Adj Close"].loc[period]) / VPA )
-            else:
-                BM.append(0)
-        value.loc[period] = classificar(BM, quantile, "high", "low")
-
-    pad.verbose('line', level=3, verbose=verbose)
-
-    return value
-
-
-
-
-
-
-def carteiraLiquidity(prices, amostra_aprovada, quantile = 1/3, verbose=False):
-    '''
-        Classifica cada ativo por período (diário, trimestral ou anual) em "liquid" ou "iliquid" de acordo com a sua liquidez
-    '''
-    pad.verbose("Montando carteiras de liquidez", level=3, verbose=verbose)
-
-    liquidity = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
-    i=1
-    for periodo in amostra_aprovada.index:
-        pad.verbose(str(i)+". Montando carteiras de liquidez para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
-        i += 1
-        
-        liquidez_periodo = []
-        for ticker in amostra_aprovada.columns:
-            
-            if amostra_aprovada[ticker].loc[periodo]:
-                liquidez_periodo.append(prices[ticker]["Volume"].loc[periodo])
-            else:
-                liquidez_periodo.append(0)
-        liquidity.loc[periodo] = classificar(liquidez_periodo, quantile, "liquid", "iliquid")
-
-    pad.verbose('line', level=3, verbose=verbose)
-
-    return liquidity
 
 
     
@@ -251,14 +183,6 @@ def getBeta(prices, amostra_aprovada, start= dt.date.today(), end= dt.date.today
             j+=1
         betas_result[ticker] = betas
     return betas_result
-
-def validate_returns_dates(asset, benchmark):
-    result = pd.DataFrame(columns=["stock", "benchmark"])
-    benchmark_dates = set(benchmark.index)
-    for d in asset.index:
-        if d in benchmark_dates:
-            result.loc[d] = [ asset["returns"].loc[d], benchmark["returns"].loc[d] ]
-    return result
 
 
 def beta(Rm, Ra):
@@ -359,4 +283,34 @@ def getVPA(PL, ticker, period, freq):
     FUNÇÕES AUXILIARES
 '''
 
+def to_df(dic, indexes):
+    result = pd.DataFrame(index= indexes)
+    for key in dic:
+        try:
+            result[key] = dic[key]
+        except:
+            result[key] = util.eliminate_duplicates_indexes(dic[key])
+    
+    result.dropna(axis="index", how="all", inplace=True)
+
+    return result
+
+
+
+def get_first_day_of_year(array):
+    result = list()
+    years = set()
+    for d in array:
+        if d.year not in years:
+            result.append( d )
+            years.add(d.year)
+    return result
+
+def validate_returns_dates(asset, benchmark):
+    result = pd.DataFrame(columns=["stock", "benchmark"])
+    benchmark_dates = set(benchmark.index)
+    for d in asset.index:
+        if d in benchmark_dates:
+            result.loc[d] = [ asset["returns"].loc[d], benchmark["returns"].loc[d] ]
+    return result
 

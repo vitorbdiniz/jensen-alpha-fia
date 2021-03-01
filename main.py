@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 
 #Comunicação com sistema
-from busca_dados import get_prices, rearange_prices
+from busca_dados import get_prices
 from criterios_elegibilidade import criterios_elegibilidade
 from formacao_carteiras import forma_carteiras
 from fatores_risco import calcula_fatores_risco, test_factors
@@ -85,7 +85,7 @@ def main():
 			amostra_aprovada.to_csv("./data/criterios/amostra_aprovada.csv")
 			pad.verbose("-- OK", level=2, verbose=verbose)
 
-	prices = rearange_prices(prices, start, end, column = "Adj Close")
+
 
 	pad.verbose("- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS -", level=1, verbose=verbose)
 

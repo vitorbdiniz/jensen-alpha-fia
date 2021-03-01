@@ -99,8 +99,6 @@ def get_stockid(stockid, ticker):
     return -1
 
 
-def rearange_prices(prices, start=dt.date(2010,1,1), end=dt.date.today(), column = "Adj Close"):
-    return pd.DataFrame({ ticker : prices[ticker][column] for ticker in prices.keys() }, index=util.date_range(start, end, frequency="D"))
     
 
 

@@ -43,19 +43,13 @@ def get_company_market_caps(prices, stocks, dates, ticker, verbose=0):
     market_caps = pd.Series([],index=[])
 
     for d in dates:
-        price = get_previous_data(prices, d)
-        n_stocks = get_previous_data(stocks, d)
+        price = util.get_previous_data(prices, d)
+        n_stocks = util.get_previous_data(stocks, d)
         market_cap = pd.Series([price * n_stocks], index=[d])
         market_caps = market_caps.append(market_cap)
 
     return market_caps
 
-def get_previous_data(series, index):
-    try:
-        i = series.index.get_loc(index, method="pad")
-    except:
-        i = 0
-    return series.iloc[i]
 
 def totalstocks(stocks, dates):
     stocks = stocks[["codigo_negociacao", "release_date", "totais"]]
