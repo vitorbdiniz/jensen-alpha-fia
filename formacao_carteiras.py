@@ -12,6 +12,7 @@ import padding as pad
 from carteira_tamanho import get_market_caps
 from carteira_valor import get_all_book_to_market
 from carteira_liquidez import get_liquidities
+from carteira_momentum import get_momentum
 
 from fator_qualidade import carteiraQuality 
 
@@ -34,7 +35,7 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
     carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
     carteiras['liquidity']  = monta_carteiras("liquidez", "liquid", "iliquid", volumes, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
-    #carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
+    carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
     #carteiras['BAB']        = monta_carteiras("bab", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
     #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose, persist=persist)
     
@@ -62,7 +63,7 @@ def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amos
         carteira = get_liquidities(volumes=prices, dates=amostra_aprovada.index, tickers=amostra_aprovada.columns, verbose=verbose)
     
     elif nome_carteira.lower() == "momento" or nome_carteira.lower() == "momentum" or nome_carteira.lower() == "mom" or nome_carteira.lower() == "wml":
-        carteira = 0 #TODO
+        carteira = get_momentum(prices=prices, dates=amostra_aprovada.index, tickers=amostra_aprovada.columns, verbose=verbose)
     
     elif nome_carteira.lower() == "beta" or nome_carteira.lower() == "bab" or nome_carteira.lower() == "betting against beta":
         carteira = 0 #TODO
@@ -91,35 +92,6 @@ def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amos
 """
 
 
-
-
-
-    
-def carteiraMomentum(prices, amostra_aprovada, quantile = 1/3, start= dt.date.today(), end= dt.date.today(), verbose=False):
-    '''
-        Classifica cada ativo por período (diário, trimestral ou anual) em "winner" ou "loser" de acordo com seu retorno
-    '''
-    pad.verbose("Montando carteiras de momentum", level=3, verbose=verbose)
-    pad.verbose("Calculando rentabilidades necessárias", level=4, verbose=verbose)
-
-    returns = util.allReturns(prices)
-    momentum = pd.DataFrame(index=amostra_aprovada.index, columns =amostra_aprovada.columns)
-    i = 1
-    for periodo in amostra_aprovada.index:
-        pad.verbose(str(i)+". Montando carteiras de momentum para o período " + str(periodo) + " ---- restam " + str(len(amostra_aprovada.index)-i), level=5, verbose=verbose)
-        i += 1
-
-        rentabilidade_periodo = []
-        for ticker in amostra_aprovada.columns:
-            if amostra_aprovada[ticker].loc[periodo]:
-                rentabilidade_periodo.append(returns[ticker]["returns"].loc[periodo])
-            else:
-                rentabilidade_periodo.append(0)
-        momentum.loc[periodo] = classificar(rentabilidade_periodo, quantile, "winner", "loser")
-
-    pad.verbose("line", level=3, verbose=verbose)
-
-    return momentum
 
 def carteiraBeta(prices, amostra_aprovada, betas,quantile = 1/3, start= dt.date.today(), end= dt.date.today(), years = 3, verbose=False):
     '''
@@ -254,63 +226,4 @@ def classificador_valor(valor, limite_inferior, limite_superior, acima = 1, abai
     return result
 
 
-
-
-'''
-
-    INDICADORES
-
-'''
-
-def getVPA(PL, ticker, period, freq):
-    df = PL[PL[0]==ticker]
-    if df.shape[0] == 0:
-        return 0
-    row = 0
-    for i in range(len(df[5])):
-        if util.compareTime(str(period), str(df[5].iloc[i]), freq) >= 1:
-            row = i
-        else:
-            break
-    return float(df[10].iloc[row])
-
-
-
-
-
-
-'''
-    FUNÇÕES AUXILIARES
-'''
-
-def to_df(dic, indexes):
-    result = pd.DataFrame(index= indexes)
-    for key in dic:
-        try:
-            result[key] = dic[key]
-        except:
-            result[key] = util.eliminate_duplicates_indexes(dic[key])
-    
-    result.dropna(axis="index", how="all", inplace=True)
-
-    return result
-
-
-
-def get_first_day_of_year(array):
-    result = list()
-    years = set()
-    for d in array:
-        if d.year not in years:
-            result.append( d )
-            years.add(d.year)
-    return result
-
-def validate_returns_dates(asset, benchmark):
-    result = pd.DataFrame(columns=["stock", "benchmark"])
-    benchmark_dates = set(benchmark.index)
-    for d in asset.index:
-        if d in benchmark_dates:
-            result.loc[d] = [ asset["returns"].loc[d], benchmark["returns"].loc[d] ]
-    return result
 
