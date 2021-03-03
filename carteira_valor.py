@@ -21,6 +21,17 @@ def get_all_book_to_market(prices, dates, tickers, verbose=0):
         Computa os indicadores book-to-market (BM ou PVPA) de vários ativos para vários períodos
 
         Retorna um DataFrame com os BMs para cada ativo(coluna) em um instante de tempo (linha)
+
+        NEFIN:
+            The High Minus Low Factor (HML) is the return of a portfolio long on stocks with high
+            book-to-market ratio (“High”) and short on stocks with low book-to-market ratio (“Low”).
+
+            Every January of year t, we (ascending) sort the eligible stocks into 3 quantiles
+            (portfolios) according to the book-to-market ratio of the firms in June of year t-1. Then,
+            we compute the equal-weighted returns of the first portfolio (“Low”) and the third
+            portfolio (“High”). The HML Factor is the return of the “High” portfolio minus the return
+            of the “Low” portfolio.
+
     """
     patrimonio_liquido = matrixDB.get_equity(environment="prod", verbose=verbose)
     patrimonio_liquido["VPA"] = [x if x != 0 else None for x in patrimonio_liquido["VPA"]]
@@ -47,14 +58,14 @@ def get_company_BMs(prices, VPA, dates, ticker, verbose=0):
     BMs = pd.Series([],index=[])
 
     for d in dates:
-        price = util.get_previous_data(prices, d)
-        valor_VPA = util.get_previous_data(VPA, d)
+        price = util.get_previous_data(prices, dt.datetime(year=d.year, month=6, day=30))
+        valor_VPA = util.get_previous_data(VPA, dt.datetime(year=d.year, month=6, day=30))
         if valor_VPA == 0:
             BM = pd.Series([None], index=[d])    
         else:
             BM = pd.Series([price / float(valor_VPA)], index=[d])
         BMs = BMs.append(BM)
-
+    exit(BMs)
     return BMs
 
 def rearange_BMs(patrimonio_liquido, dates):
