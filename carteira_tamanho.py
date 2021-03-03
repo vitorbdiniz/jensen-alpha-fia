@@ -21,6 +21,14 @@ def get_market_caps(prices, dates, tickers, verbose=0):
         Computa os valores de mercado de vários ativos para vários períodos
 
         Retorna um DataFrame com os valores de mercado para cada ativo(coluna) em um instante de tempo (linha)
+
+        NEFIN:
+            Every January of year t, we (ascending) sort the eligible stocks according to their
+            December of year t-1 market capitalization, and separate them into 3 quantiles. Then,
+            we compute the equal-weighted returns of the first portfolio (“Small”) and the third
+            portfolio (“Big”). The SMB Factor is the return of the “Small” portfolio minus the return
+            of the “Big” portfolio.
+
     """
     stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
     stocks = totalstocks(stocks, dates)
@@ -39,7 +47,7 @@ def get_company_market_caps(prices, stocks, dates, ticker, verbose=0):
     pad.verbose(f"Calculando Market Cap de {ticker}", level=5, verbose=verbose)
 
     stocks = stocks.dropna()
-    prices = prices.dropna()
+    prices = prices.dropna().rolling(window=21).mean().dropna()
     market_caps = pd.Series([],index=[])
 
     for d in dates:
