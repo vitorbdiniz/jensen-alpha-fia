@@ -65,7 +65,6 @@ def get_company_BMs(prices, VPA, dates, ticker, verbose=0):
         else:
             BM = pd.Series([price / float(valor_VPA)], index=[d])
         BMs = BMs.append(BM)
-    exit(BMs)
     return BMs
 
 def rearange_BMs(patrimonio_liquido, dates):
