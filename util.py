@@ -190,16 +190,25 @@ def getNextPeriod(time, freq):
     return res
 
 def date_range(start, end, frequency="D"):
-    
     start = dt.datetime(start.year, start.month, start.day)
     end = dt.datetime(end.year, end.month, end.day)
     if frequency == "D":
        result = pd.DatetimeIndex([start + dt.timedelta(days=i) for i in range( (end-start).days+1 )])
     elif frequency == "Y":
        result = pd.DatetimeIndex([ dt.date(i, 1, 1) for i in range( start.year, end.year+1 )])
-    
+    elif frequency == "M":
+        result = []
+        for y in range(start.year, end.year+1):
+            for m in range(1, 13):
+                if y == start.year and m < end.month:
+                    continue
+                elif y == end.year and m > end.month:
+                    break
+                else:
+                    result.append( dt.datetime(year=y, month=m, day=1) )
+        result = pd.DatetimeIndex(result)
     else:
-        raise AttributeError("'frequency'")
+        raise AttributeError("frequency")
     return result
 
 def getQuarterRange(start=dt.date.today(), end=dt.date.today()):
