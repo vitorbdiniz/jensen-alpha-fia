@@ -46,6 +46,9 @@ def kill_duplicates(df, check_column="index"):
 
 """
 
+def drop_duplicate_index(df):
+    return df[~df.index.duplicated(keep='first')]
+
 def eliminate_duplicates_indexes(serie):
     index = []
     check_indexes = set()
@@ -57,7 +60,13 @@ def eliminate_duplicates_indexes(serie):
             check_indexes.add(i)
     return pd.Series(values, index)
 
-def get_previous_data(series, index):
+def get_previous_data(series, index, dropna=False):
+    if dropna:
+        series = series.dropna()
+    
+    if len(series) == 0:
+        return 0
+
     try:
         i = series.index.get_loc(index, method="pad")
     except:
@@ -340,11 +349,12 @@ def getReturns(prices, form="DataFrame"):
         returns = pd.DataFrame({"returns":r}, index=prices.index)
     elif form == "Series":
         returns = pd.Series(r, index=prices.index)
-
+    else:
+        returns = r
     return returns
     
 def allReturns(prices = dict()):
-    return {ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}
+    return pd.DataFrame({ticker:pd.DataFrame(getReturns(prices[ticker]), index=list(prices[ticker].index)) for ticker in prices.keys()}, index=date_range(dt.datetime(2010,1,1), dt.datetime.today()))
 
 
 def cumulative_return(retornos):
@@ -378,7 +388,7 @@ def mean_annual_return(array):
 
 """
 
-def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False):
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = True, form="DataFrame"):
     pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
     start = dateReformat(str(start))
     end = dateReformat(str(end))
@@ -403,9 +413,11 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persis
         selic = selic.loc[start:end]
 
     selic.index = pd.DatetimeIndex(selic.index)
-
     if persist:
         selic.to_csv("./data/selic.csv")
+    if form == "Series":
+        selic = selic["valor"]
+
     pad.verbose("line", level=5, verbose=verbose)
     return selic
 
@@ -493,3 +505,15 @@ def write_file(path, data):
 def trailing_sum(array, period = 12):
     return [ sum(array[0:i]) for i in range(period)] + [sum(array[i-period:i]) for i in range(period, len(array))]
 
+def get_data_in_year(df, year):
+    start = 0
+    end = len(df.index)
+    year_found = False
+    for i in range(len(df.index)):
+        if not year_found and df.index[i].year == year:
+            start = i
+            year_found = True
+        elif year_found and df.index[i].year > year:
+            end = i
+            break
+    return df.iloc[start:end].copy()
