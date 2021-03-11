@@ -28,13 +28,11 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     closing_prices = rearange_prices(prices, start, end, column = "Adj Close")
     volumes = rearange_prices(prices, start, end, column = "Volume")
 
+    carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     carteiras['liquidity']  = monta_carteiras("liquidez", "illiquid", "liquid", {"volumes":volumes, "prices":closing_prices}, amostra_aprovada, quantile, rejected=[30, None], start=start, end=end, verbose=verbose)
-    carteiras['liquidity'].to_csv("./data/carteiras/liq.csv")
-    #carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    #carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    #carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    
-    #carteiras['BAB']        = monta_carteiras("bab", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    carteiras['BAB']        = monta_carteiras("BAB", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     
     #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     
@@ -73,7 +71,6 @@ def monta_carteiras(nome_carteira, carteira_acima, carteira_abaixo, prices, amos
     else:
         raise ValueError(f"nome_carteira mal especificado: nome_carteira = {nome_carteira}")
     
-    carteira.to_csv("./data/carteiras/liq.csv")
     carteira = classificador_df(carteira, amostra_aprovada, q = quantile, acima = carteira_acima, abaixo = carteira_abaixo, rejected=rejected, verbose=verbose)
     carteira.dropna(how="all", inplace=True)
     

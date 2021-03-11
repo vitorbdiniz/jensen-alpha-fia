@@ -13,18 +13,18 @@ def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= s
     
     closing_prices = util.rearange_prices(prices, start, end, column = "Adj Close")
     returns = pd.DataFrame({ticker : util.getReturns(closing_prices[ticker], form="Series") for ticker in closing_prices.columns}, index = closing_prices.index).dropna(how="all")
-
-    fatores = pd.DataFrame(index=returns.index)
+    fatores = pd.DataFrame( index=util.date_range(start, end) )
     
-    fatores["fator_mercado"]  = marketFactor(Rm="^BVSP", Rf = "selic", start=start, end=end, verbose=verbose)
-    fatores["fator_tamanho"]  = calculate_factor_all_dates(carteiras["size"], returns, factor_name="tamanho", nome_carteira_long="small", nome_carteira_short="big",  verbose=verbose)
-    fatores["fator_valor"]    = calculate_factor_all_dates(carteiras["value"], returns, factor_name="valor", nome_carteira_long="high", nome_carteira_short="low",  verbose=verbose)
-    fatores["fator_liquidez"] = calculate_factor_all_dates(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira_long="illiquid", nome_carteira_short="liquid",  verbose=verbose)
-    fatores["fator_momentum"] = calculate_factor_all_dates(carteiras["momentum"], returns, factor_name="momentum", nome_carteira_long="winner", nome_carteira_short="loser",  verbose=verbose)
-    
-    #fatores["fator_beta"]     = calculate_factor_all_dates(carteiras["beta"], returns, factor_name="beta", nome_carteira_long="low_beta", nome_carteira_short="high_beta",  verbose=verbose)
+    fatores["MKT"] = marketFactor(Rm="^BVSP", Rf = "selic", start=start, end=end, verbose=verbose)
+    fatores["SMB"] = calculate_factor_all_dates(carteiras["size"], returns, factor_name="tamanho", nome_carteira_long="small", nome_carteira_short="big",  verbose=verbose)
+    fatores["HML"] = calculate_factor_all_dates(carteiras["value"], returns, factor_name="valor", nome_carteira_long="high", nome_carteira_short="low",  verbose=verbose)
+    fatores["IML"] = calculate_factor_all_dates(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira_long="illiquid", nome_carteira_short="liquid",  verbose=verbose)
+    fatores["WML"] = calculate_factor_all_dates(carteiras["momentum"], returns, factor_name="momentum", nome_carteira_long="winner", nome_carteira_short="loser",  verbose=verbose)
+    fatores["BAB"] = calculate_factor_all_dates(carteiras["BAB"], returns, factor_name="beta", nome_carteira_long="low_beta", nome_carteira_short="high_beta",  verbose=verbose)
     #fatores["QMJ"] = calculate_factor_all_dates(carteiras["quality"], returns, factor_name="qualidade", nome_carteira_long="quality", nome_carteira_short="junk",  verbose=verbose)
-    fatores.dropna(inplace=True)
+    
+    fatores.dropna(how="all", inplace=True)
+
     return fatores
 
 def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=str(dt.date.today()), verbose=0):   
@@ -57,31 +57,30 @@ def calculate_factor_all_dates(carteiras, returns, factor_name, nome_carteira_lo
         Retorna pandas.Series com o cálculo diário do fator.
 
     """
-    pad.verbose(f"- Calculando fator de risco de {factor_name} -", level=2, verbose=verbose)
     factor = pd.Series({})
-
-    for d in carteiras.index:
-        year_returns = util.get_data_in_year(returns, year = d.year)
-        partial = calculate_periodic_factors(carteiras.loc[d], year_returns, factor_name, nome_carteira_long, nome_carteira_short, verbose=verbose)
-        factor = factor.append(partial)
-    return factor
-
-
-def calculate_periodic_factors(carteiras, returns, factor_name, nome_carteira_long, nome_carteira_short, verbose=0):
-
-    portfolioLong = returns[ [ ticker for ticker in carteiras.index if carteiras.loc[ticker] == nome_carteira_long] ]
-    portfolioShort = returns[ [ ticker for ticker in carteiras.index if carteiras.loc[ticker] == nome_carteira_short] ]
-
-    factor = pd.Series({})
-
-    i = 1
-    for d in portfolioLong.index:
-        pad.verbose(f"{i}. Calculando fator {factor_name} para o periodo {d} ---- restam {len(returns.index)-i}", level=5, verbose=verbose)
+    i=1
+    for d in returns.index:
+        pad.verbose(f"{i}. Calculando fator de risco de {factor_name} para o período {d}", level=2, verbose=verbose)
         i+=1
-        factor = factor.append( pd.Series({ d : (mean(portfolioLong.loc[d]) - mean(portfolioShort.loc[d])) }) )
+        if d >= carteiras.index[0]:
+            portfolios = carteiras.iloc[carteiras.index.get_loc(d, method="pad")]
+            partial = pd.Series([calculate_factor(returns.loc[d], portfolios, nome_carteira_long, nome_carteira_short)], index=[d])
+            factor = factor.append(partial)
+            
+    pad.verbose("line", level=2, verbose=verbose)
     return factor
 
+def calculate_factor(returns, portfolios, long, short):
+    portfolioLong = []
+    portfolioShort = []
+    for i in portfolios.index:
+        if portfolios.loc[i] == long:
+            portfolioLong.append(returns.loc[i])
+        elif portfolios.loc[i] == short:
+            portfolioShort.append(returns.loc[i])
+    factor = mean(portfolioLong) - mean(portfolioShort)
 
+    return factor
 
 
 def nefin_factors():
