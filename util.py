@@ -349,9 +349,10 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
 """
 
 def getReturns(prices, form="DataFrame"):
+    prices = prices.dropna()
     if type(prices) == type(pd.DataFrame({})):
         r = [0]+[prices["Close"].iloc[i] / prices["Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
-    elif type(prices) == type(pd.Series({1:1})):
+    elif type(prices) == type(pd.Series({})):
         r = [0]+[prices.iloc[i] / prices.iloc[i-1] -1 for i in range(1, len(prices.index))]
 
     if form == "DataFrame":
@@ -440,7 +441,7 @@ def total_liquidity_per_year(volume, date_array = None, form = "dic", year_form=
     for d in volume.index:
         if pd.isna(volume.loc[d]):
             volume.loc[d] = 0
-        result[d.year] = result[d.year] + volume.loc[d] if d.year in result else volume.loc[d]
+        result[d.year] = result[d.year] + float(volume.loc[d]) if d.year in result else float(volume.loc[d])
     
     if year_form == "datetime":
         result = { dt.datetime(year=x, month=1, day=1) : result[x] for x in result.keys() }
@@ -454,7 +455,7 @@ def total_liquidity_per_year(volume, date_array = None, form = "dic", year_form=
 
 def mean_liquidity_per_year(volume, date_array = None):
     result = total_liquidity_per_year(volume, date_array)
-    result = {year : result[year]/date_array[year]   if year in result else 0   for year in date_array}
+    result = {year : float(result[year])/int(date_array[year])   if year in result else 0   for year in date_array}
     return result
 
 def getCode(ticker):
