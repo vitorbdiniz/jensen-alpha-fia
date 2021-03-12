@@ -42,7 +42,7 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
     prices = dict()
     i=1
     for t in tickers:
-        pad.verbose(f"{i}. Buscando preços de {ticker} ---- faltam {len(tickers)-i}", level=5, verbose=verbose)
+        pad.verbose(f"{i}. Buscando preços de {t} ---- faltam {len(tickers)-i}", level=5, verbose=verbose)
         i+=1
 
         try:
@@ -60,7 +60,6 @@ def get_prices_from_influx(tickers, start, end, verbose):
     """
         Busca cotações do Stocks, base de dados no BD Influx do TC 
     """
-    import time
     data = get_prices_data(verbose=verbose)
 
     prices = dict()
@@ -69,12 +68,14 @@ def get_prices_from_influx(tickers, start, end, verbose):
     for ticker in tickers:
         pad.verbose(f"{i}. Buscando preços de {ticker} ---- faltam {len(tickers)-i}", level=5, verbose=verbose)
         i+=1
-        try:
-            df = data[data['ticker'] == ticker].copy()
+
+        df = data[data['ticker'] == ticker].copy()
+        if df.shape[0] > 0:
             df.index = pd.DatetimeIndex(df['time'])
             df.drop(columns=['ticker', 'time'], inplace=True)
+            df = util.drop_duplicate_index(df)
             prices[ticker] = df
-        except:
+        else:
             pad.verbose("-> Ação não encontrada", level=5, verbose=verbose)
     return prices
 
@@ -102,13 +103,13 @@ def get_prices_data(dictionary = None, verbose=0):
     pad.verbose(f"Buscando dados de cotações", level=3, verbose=verbose)
 
     data = pd.read_csv("./data/precos_influx.csv")
-    data = data[["stockid", "time","Open", "High", "Low", "Close", "Volume"]]
+    data = data[["stockid", "time","Open", "High", "Low", "Close", "financialvolume"]]
     
     pad.verbose(f"Pré-processando dados de cotações", level=3, verbose=verbose)
     data["time"] = [str_to_datetime(data["time"].iloc[i], datatype='date') for i in range(data.shape[0])]
     data["ticker"] = [ dictionary[id] for id in data["stockid"]] 
 
-    data = data.drop(columns=['stockid'])
+    data = data.drop(columns=['stockid']).rename(columns={"financialvolume":"Volume"})
     return data
 
 def str_to_datetime(string, datatype = 'datetime'):
