@@ -25,7 +25,7 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     #betas.to_csv("./data/alphas/betas.csv")
     #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)
 
-    closing_prices = rearange_prices(prices, start, end, column = "Adj Close")
+    closing_prices = rearange_prices(prices, start, end, column = "Close")
     volumes = rearange_prices(prices, start, end, column = "Volume")
 
     carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)

@@ -16,7 +16,7 @@ import padding as pad
 
 """
 
-def rearange_prices(prices, start=dt.date(2010,1,1), end=dt.date.today(), column = "Adj Close"):
+def rearange_prices(prices, start=dt.date(2010,1,1), end=dt.date.today(), column = "Close"):
     return pd.DataFrame({ ticker : prices[ticker][column] for ticker in prices.keys() }, index=date_range(start, end, frequency="D"))
 
 def kill_duplicates(df, check_column="index"):
@@ -350,7 +350,7 @@ def get_frequency(start = dt.date.today(), end = dt.date.today(), freq = "daily"
 
 def getReturns(prices, form="DataFrame"):
     if type(prices) == type(pd.DataFrame({})):
-        r = [0]+[prices["Adj Close"].iloc[i] / prices["Adj Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
+        r = [0]+[prices["Close"].iloc[i] / prices["Close"].iloc[i-1] -1 for i in range(1, len(prices.index))]
     elif type(prices) == type(pd.Series({1:1})):
         r = [0]+[prices.iloc[i] / prices.iloc[i-1] -1 for i in range(1, len(prices.index))]
 

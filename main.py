@@ -26,7 +26,7 @@ def main():
 	criterio_liquidez = 0.8 #liquidez em 80% dos períodos
 
 	##Fonte
-	get_from="yahoo"
+	get_from="influx"
 
 	#parâmetros adicionais
 	quantile = 1/3 
@@ -49,8 +49,6 @@ def main():
 	else:
 		tickers = "all"
 		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
-		
-
 		if persist:
 			pad.verbose("- Persistindo preços. Não interrompa a execução. -", level=2, verbose=verbose)
 
@@ -59,7 +57,6 @@ def main():
 				prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
 			pad.verbose("-- OK.", level=2, verbose=verbose)
 
-	
 	pad.verbose("- INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA -", level=1, verbose=verbose)
 	
 	if test:
@@ -101,7 +98,7 @@ def main():
 	#### Calculando fatores de risco
 	pad.verbose("- INICIANDO PROCEDIMENTO DE CÁLCULO DE FATORES DE RISCO -", level=5, verbose=verbose)
 
-	if False:
+	if test:
 		fatores_risco = nefin_factors()
 		fatores_risco.to_csv("./data/fatores/risk_factors.csv")
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)

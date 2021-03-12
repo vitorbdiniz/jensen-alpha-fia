@@ -11,7 +11,7 @@ def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= s
     
     pad.verbose("line", level=2, verbose=verbose)
     
-    closing_prices = util.rearange_prices(prices, start, end, column = "Adj Close")
+    closing_prices = util.rearange_prices(prices, start, end, column = "Close")
     returns = pd.DataFrame({ticker : util.getReturns(closing_prices[ticker], form="Series") for ticker in closing_prices.columns}, index = closing_prices.index).dropna(how="all")
     fatores = pd.DataFrame( index=util.date_range(start, end) )
     
@@ -33,7 +33,7 @@ def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=st
     
     ibov = busca_dados.get_prices(Rm, start, end, verbose=0)["^BVSP"]
     
-    Rm = util.getReturns(ibov["Adj Close"], form="Series")
+    Rm = util.getReturns(ibov["Close"], form="Series")
     Rf = getSelic(start, end, form="Series")
     indexes_set = set(Rf.index)
     

@@ -15,7 +15,7 @@ def get_momentum(prices, dates, tickers, verbose=0):
     
     pad.verbose("- Calculando as rentabilidades -", level=2, verbose=verbose)
     
-    price_per_year = lambda prices : pd.Series({dt.datetime(d.year, 1, 1) : prices.loc[d] for d in prices.index if pd.notna(prices.loc[d])})
+    #price_per_year = lambda prices : pd.Series({dt.datetime(d.year, 1, 1) : prices.loc[d] for d in prices.index if pd.notna(prices.loc[d])})
     price_per_period = lambda prices, period : prices.dropna().resample(str(period[0]).upper()).pad()
     increment_list = lambda iterable, factor : [ x + factor for x in iterable ]
 

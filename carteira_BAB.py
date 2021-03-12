@@ -16,7 +16,7 @@ def get_all_betas(prices:pd.DataFrame, start=dt.date(2010, 1, 1), end = dt.date.
         The portfolios are rebalanced every calendar month.
     """
     
-    ibov:pd.Series = get_prices("ibov", start=start, end=end)["^BVSP"]["Adj Close"]
+    ibov:pd.Series = get_prices("ibov", start=start, end=end)["^BVSP"]["Close"]
     #ibov_stdev = ibov.rolling(window=250).std()
 
     index = date_range(start, end, frequency="D")

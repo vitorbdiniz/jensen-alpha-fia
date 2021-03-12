@@ -74,7 +74,7 @@ def market_caps_ratio(start = dt.datetime(2000,1,31), end = dt.datetime.today())
         month t-1 and at the end of January 2000.
     """
 
-    ibov:pd.Series = get_prices("^BVSP", start, end)["^BVSP"]["Adj Close"]
+    ibov:pd.Series = get_prices("^BVSP", start, end)["^BVSP"]["Close"]
     ibov = pd.Series([x / ibov.iloc[0] for x in ibov.values], index=ibov.index).resample("M").pad()
 
     return ibov
