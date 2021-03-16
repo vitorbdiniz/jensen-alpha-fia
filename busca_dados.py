@@ -2,7 +2,6 @@
 import datetime as dt
 import pandas as pd
 import pandas_datareader as web
-import warnings
 
 #Workspace libs
 import matrixDB
@@ -31,8 +30,6 @@ def get_prices(tickers, start=dt.date.today(), end=dt.date.today(),verbose = 0, 
     else:
         prices = get_prices_from_yahoo(tickers, start, end, verbose)
     
-    pad.verbose("line", level=4, verbose=verbose)
-
     return prices
 
 def kill_units(tickers):
@@ -42,15 +39,17 @@ def get_prices_from_yahoo(tickers, start, end, verbose):
     prices = dict()
     i=1
     for t in tickers:
+        t = t.upper()
         pad.verbose(f"{i}. Buscando preços de {t} ---- faltam {len(tickers)-i}", level=5, verbose=verbose)
         i+=1
-
+        
         try:
-            ticker = t if t[0] == '^' else str(t+".SA").upper()
-            prices[t] = web.get_data_yahoo(ticker, start, end)
-            prices[t]["Close"] = prices[t]["Adj Close"]
+            ticker = t if t[0] == '^' else str(t+".SA")
+            p = web.get_data_yahoo(ticker, start, end)
+            p["Close"] = p["Adj Close"]
+            prices[t] = p
         except:
-            pad.verbose("-> Ação não encontrada", level=5, verbose=verbose)
+            pad.verbose("----> Ação não encontrada", level=5, verbose=verbose)
     return prices
 
 
