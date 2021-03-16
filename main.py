@@ -1,4 +1,4 @@
-import routines
+from scripts.rotinas import routines
 from datetime import date
 
 def main(routine = "factors_complete"):
