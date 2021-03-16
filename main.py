@@ -20,4 +20,5 @@ def main(routine = "factors_complete"):
 
 
 if __name__ == "__main__":
-    main()
+	routine = "factors_complete"
+	main(routine)
