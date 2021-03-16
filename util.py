@@ -527,3 +527,8 @@ def get_data_in_year(df, year):
             end = i
             break
     return df.iloc[start:end].copy()
+
+def none_to_zero(array):
+    return [x if pd.notna(x) else 0 for x in array]
+
+    
