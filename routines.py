@@ -39,6 +39,7 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	fatores_risco = monta_fatores(prices, carteiras, start, end, test, verbose, persist)
 
 	pad.verbose("- FIM -", level=1, verbose=verbose)
+	return fatores_risco
 
 
 def busca_cotacoes(test, start, end, verbose, get_from, persist):
@@ -52,12 +53,9 @@ def busca_cotacoes(test, start, end, verbose, get_from, persist):
 	else:
 		tickers = "all"
 		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
-		if persist:
-			pad.verbose("- Persistindo preços. Não interrompa a execução. -", level=2, verbose=verbose)
-			pd.DataFrame({"tickers": list(prices.keys())}).to_csv("./data/ticker_list.csv")
-			for ticker in prices.keys():
-			        prices[ticker].to_csv("./data/prices/" + ticker + ".csv")
-			pad.verbose("-- OK.", level=2, verbose=verbose)
+		pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
+
+	pad.verbose("line", level=1, verbose=verbose)
 	return prices
 
 def monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist):
@@ -69,11 +67,9 @@ def monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist
 
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start = start, end = end, criterion = criterio_liquidez, verbose = verbose)
-		if persist:
-			pad.verbose("-- Persistindo preços. Não interrompa a execução. --", level=2, verbose=verbose)
-			amostra_aprovada.to_csv("./data/criterios/amostra_aprovada.csv")
-			pad.verbose("-- OK", level=2, verbose=verbose)
-
+		pad.persist(amostra_aprovada, path="./data/criterios/amostra_aprovada.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo amostra avaliada. Não interrompa a execução. -")
+	
+	pad.verbose("line", level=1, verbose=verbose)
 	return amostra_aprovada
 
 def monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbose, persist):
@@ -90,11 +86,9 @@ def monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbos
 			carteiras[c].index = pd.DatetimeIndex([util.str_to_date(x) for x in carteiras[c].index])
 	else:
 		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, verbose)
-		if persist:
-			pad.verbose("-- Persistindo carteiras --", level=2, verbose=verbose)
-			for carteira in carteiras:
-				carteiras[carteira].to_csv("./data/carteiras/"+ carteira +".csv")
-			pad.verbose("-- OK", level=2, verbose=verbose)
+		pad.persist_collection(carteiras, path="./data/criterios/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
+
+	pad.verbose("line", level=1, verbose=verbose)
 	return carteiras
 
 def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
@@ -105,12 +99,9 @@ def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
 		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
+		pad.persist(fatores_risco, path="./data/criterios/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 		
-
-		if persist:
-			pad.verbose("-- Persistindo fatores de risco. Não interrompa a execução. --", level=2, verbose=verbose)
-			fatores_risco.to_csv("./data/fatores/fatores_risco.csv")
-			pad.verbose("-- OK", level=2, verbose=verbose)
+	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco
 
 def monta_alphas(fatores_risco, fatores, test, persist, verbose): #TODO
@@ -130,9 +121,8 @@ def monta_alphas(fatores_risco, fatores, test, persist, verbose): #TODO
 		alphas['REAL INVESTOR FUNDO DE INVESTIMENTO EM COTAS DE FUNDO DE INVESTIMENTO EM AÇÕES BDR NÍVEL I'] = pd.read_csv("./data/alphas/REAL INVESTOR FUNDO DE INVESTIMENTO EM COTAS DE FUNDO DE INVESTIMENTO EM AÇÕES BDR NÍVEL I.csv", index_col=0)
 	else:
 		alphas = jensens_alpha(fatores_risco, fis, fatores=fatores,verbose=verbose)
-		if persist:
-			for fund in alphas:
-				alphas[fund].to_csv("./data/alphas/"+str(fund)+".csv")
+		pad.persist_collection(alphas, path="./data/alphas/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo alfas. Não interrompa a execução. -")
+
 	return alphas
 
 

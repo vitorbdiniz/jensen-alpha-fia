@@ -1,3 +1,6 @@
+import pandas as pd
+#Verbose configurations
+
 def verbose(msg, level, verbose=0):
     '''
         Printa mensagens na tela para um nível de verbose
@@ -21,3 +24,18 @@ def betwen_lines(msg):
     line = str("-" * int(s/2))
     return line + msg + line
 
+#Persist configurations
+
+def persist(df, path, to_persist=False, _verbose=0, verbose_level=0, verbose_str=""):
+    if to_persist:
+        verbose(verbose_str, level=verbose_level, verbose=_verbose)
+        df.to_csv(path)
+        verbose("-- OK.", level=verbose_level, verbose=_verbose)
+        
+def persist_collection(collection, path, extension=".csv", to_persist=False, _verbose=0, verbose_level=0, verbose_str=""):
+    if to_persist:
+        verbose(verbose_str, level=verbose_level, verbose=_verbose)
+        for c in collection:
+            c_path = path + str(c) + extension
+            persist(collection[c], c_path, to_persist=to_persist)
+        verbose("-- OK.", level=verbose_level, verbose=_verbose)
