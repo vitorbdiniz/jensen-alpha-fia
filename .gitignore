@@ -27,8 +27,9 @@ Manifest.toml
 #Arquivos csv 
 data/
 
+#Notas avulsas
+notes/
+
 #PyCache
 __pycache__/
-
-
 
