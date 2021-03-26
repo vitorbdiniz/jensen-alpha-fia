@@ -30,10 +30,10 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	"""
 
 	#### Busca de preços de ações
-	prices = busca_cotacoes(test, start, end, verbose, source, persist)
+	prices = busca_cotacoes(True, start, end, verbose, source, persist)
 
 	#### Avaliação da amostra
-	amostra_aprovada = monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist)
+	amostra_aprovada = monta_amostras(prices, True, start, end, criterio_liquidez, verbose, persist)
 
 	#### Formação de carteiras para cada período
 	carteiras = monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbose, persist)

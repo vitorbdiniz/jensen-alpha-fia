@@ -63,7 +63,7 @@ def get_company_BMs(prices, VPA, dates, ticker, verbose=0):
         if valor_VPA == 0:
             BM = pd.Series([None], index=[d])    
         else:
-            BM = pd.Series([price / float(valor_VPA)], index=[d])
+            BM = pd.Series([float(valor_VPA)/price], index=[d])
         BMs = BMs.append(BM)
     return BMs
 

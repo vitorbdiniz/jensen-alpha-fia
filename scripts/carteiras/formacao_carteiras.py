@@ -32,7 +32,7 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     carteiras['liquidity']  = monta_carteiras("liquidez", "illiquid", "liquid", {"volumes":volumes, "prices":closing_prices}, amostra_aprovada, quantile, rejected=[30, None], start=start, end=end, verbose=verbose)
-    carteiras['BAB']        = monta_carteiras("BAB", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    #carteiras['BAB']        = monta_carteiras("BAB", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     
     #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
     
