@@ -31,7 +31,6 @@ def get_market_caps(prices, dates, tickers, verbose=0):
 
     """
     stocks = matrixDB.get_stocks_quantity(environment="prod", verbose=verbose)
-    stocks.to_csv("./stocks.csv")
     stocks = totalstocks(stocks, dates)
 
     pad.verbose("- Calculando os Valores de Mercado -", level=2, verbose=verbose)
@@ -42,7 +41,6 @@ def get_market_caps(prices, dates, tickers, verbose=0):
             market_cap[ticker] = get_company_market_caps(prices[ticker], stocks[ticker], dates, ticker, verbose=verbose) 
 
     market_cap = pd.DataFrame(market_cap, index = dates)   
-    market_cap.to_csv("./MKTCAP.csv")
     return market_cap
 
 def get_company_market_caps(prices:pd.Series, stocks:pd.Series, dates, ticker, verbose=0):
