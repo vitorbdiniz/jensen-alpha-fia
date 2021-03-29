@@ -39,7 +39,7 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	carteiras = monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbose, persist)
 
 	#### Cálculo de fatores de risco
-	fatores_risco = monta_fatores(prices, carteiras, start, end, test, verbose, persist)
+	fatores_risco = monta_fatores(prices, carteiras, start, end, False, verbose, persist)
 
 	pad.verbose("- FIM -", level=1, verbose=verbose)
 	return fatores_risco
@@ -102,7 +102,10 @@ def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
 		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-		pad.persist(fatores_risco, path="./data/fatores/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
+		if type(fatores_risco) == dict:
+			pad.persist_collection(fatores_risco, path="./data/fatores/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
+		else:
+			pad.persist(fatores_risco, path="./data/fatores/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 		
 	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco

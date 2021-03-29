@@ -40,7 +40,9 @@ def get_market_caps(prices, dates, tickers, verbose=0):
         if ticker in tickers:
             market_cap[ticker] = get_company_market_caps(prices[ticker], stocks[ticker], dates, ticker, verbose=verbose) 
 
-    market_cap = pd.DataFrame(market_cap, index = dates)   
+    market_cap = pd.DataFrame(market_cap, index = dates)
+    print(market_cap.index)
+    print(dates)
     return market_cap
 
 def get_company_market_caps(prices:pd.Series, stocks:pd.Series, dates, ticker, verbose=0):
@@ -54,8 +56,8 @@ def get_company_market_caps(prices:pd.Series, stocks:pd.Series, dates, ticker, v
         market_caps = pd.Series([0 for d in dates],index=dates)
     else:
         for d in dates:
-            price = util.get_previous_data(prices, d)
-            n_stocks = util.get_previous_data(stocks, d)
+            price = util.get_previous_data(prices, d, dropna=True)
+            n_stocks = util.get_previous_data(stocks, d, dropna=True)
             market_cap = pd.Series([price * n_stocks], index=[d])
             market_caps = market_caps.append(market_cap)
 

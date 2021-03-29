@@ -58,7 +58,7 @@ def get_company_BMs(prices, VPA, dates, ticker, observed_month = 4,verbose=0):
     BMs = pd.Series([],index=[])
 
     for d in dates:
-        month = dt.datetime(year=d.year-1, month=observed_month, day=1)
+        month = dt.datetime(year=d.year-1, month=observed_month, day=10)
         price = util.get_previous_data(prices, month, dropna=True)
         valor_VPA = util.get_previous_data(VPA, month, dropna=True)
         if valor_VPA == 0 or price == 0:

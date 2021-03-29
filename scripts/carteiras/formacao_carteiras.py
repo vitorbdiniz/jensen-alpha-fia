@@ -90,8 +90,11 @@ def classificador_df(df:pd.DataFrame, amostra_aprovada:pd.DataFrame, q = 0.5, ac
         
         Retorna um DataFrame contendo as classificações
     """
-    if df.shape[1] < amostra_aprovada.shape[1]:
-        amostra_aprovada = amostra_aprovada[list(df.columns)]
+    if df.shape[1] != amostra_aprovada.shape[1]:
+        cols = list(set(df.columns).intersection(set(amostra_aprovada.columns)))        
+        amostra_aprovada = amostra_aprovada[cols]
+        df = df[cols]
+
     result = pd.DataFrame(index=df.index, columns=df.columns)
 
     for i in df.index:
