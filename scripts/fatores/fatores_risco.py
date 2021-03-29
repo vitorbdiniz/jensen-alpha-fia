@@ -1,6 +1,8 @@
 import datetime as dt
 import pandas as pd
+
 from statistics import mean
+from scipy.stats.mstats import winsorize
 
 from scripts.util import util
 from scripts.util import padding as pad
@@ -11,9 +13,7 @@ def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= s
     pad.verbose("line", level=2, verbose=verbose)
     
     closing_prices = util.rearange_prices(prices, start, end, column = "Close")
-    closing_prices.to_csv("prices.csv")
     returns = pd.DataFrame({ticker : util.getReturns(closing_prices[ticker], form="Series") for ticker in closing_prices.columns}, index = closing_prices.index).dropna(how="all")
-    returns.to_csv("retornos.csv")
     fatores = pd.DataFrame( index=util.date_range(start, end) )
     
     fatores["MKT"] = marketFactor(Rm="^BVSP", Rf = "selic", start=start, end=end, verbose=verbose)
@@ -74,6 +74,7 @@ def calculate_factor_all_dates(carteiras, returns, factor_name, nome_carteira_lo
     return factor
 
 def calculate_factor(returns, portfolios, long, short):
+    returns = pd.Series( winsorize(returns.values, limits=[0.05,0.05], nan_policy='omit'), index = returns.index)
     portfolioLong = []
     portfolioShort = []
     for i in portfolios.index:
@@ -85,7 +86,14 @@ def calculate_factor(returns, portfolios, long, short):
     portfolioLong = util.none_to_zero(portfolioLong)
     portfolioShort = util.none_to_zero(portfolioShort)
     
-    factor = mean(portfolioLong) - mean(portfolioShort)
+    short_mean = 0
+    long_mean = 0
+    if len(portfolioLong) > 0:
+        long_mean = mean(portfolioLong)
+    if len(portfolioShort) > 0:
+        short_mean = mean(portfolioShort)
+
+    factor = long_mean - short_mean if short_mean != 0 or long_mean != 0 else None
     return factor
 
 

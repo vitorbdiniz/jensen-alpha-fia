@@ -30,10 +30,10 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	"""
 
 	#### Busca de preços de ações
-	prices = busca_cotacoes(True, start, end, verbose, source, persist)
+	prices = busca_cotacoes(test, start, end, verbose, source, persist)
 
 	#### Avaliação da amostra
-	amostra_aprovada = monta_amostras(prices, True, start, end, criterio_liquidez, verbose, persist)
+	amostra_aprovada = monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist)
 
 	#### Formação de carteiras para cada período
 	carteiras = monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbose, persist)
@@ -89,7 +89,7 @@ def monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbos
 			carteiras[c].index = pd.DatetimeIndex([util.str_to_date(x) for x in carteiras[c].index])
 	else:
 		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, verbose)
-		pad.persist_collection(carteiras, path="./data/criterios/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
+		pad.persist_collection(carteiras, path="./data/carteiras/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
 
 	pad.verbose("line", level=1, verbose=verbose)
 	return carteiras
@@ -102,7 +102,7 @@ def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
 		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-		pad.persist(fatores_risco, path="./data/criterios/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
+		pad.persist(fatores_risco, path="./data/fatores/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 		
 	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco
