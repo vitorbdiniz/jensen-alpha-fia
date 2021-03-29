@@ -48,7 +48,7 @@ def get_all_book_to_market(prices, dates, tickers, verbose=0):
     BM = pd.DataFrame(BM, index = dates)
     return BM
     
-def get_company_BMs(prices, VPA, dates, ticker, verbose=0):
+def get_company_BMs(prices, VPA, dates, ticker, observed_month = 4,verbose=0):
     pad.verbose(f"Calculando Book-to-Market de {ticker}", level=5, verbose=verbose)
 
     VPA = VPA.dropna()
@@ -58,9 +58,10 @@ def get_company_BMs(prices, VPA, dates, ticker, verbose=0):
     BMs = pd.Series([],index=[])
 
     for d in dates:
-        price = util.get_previous_data(prices, dt.datetime(year=d.year, month=4, day=1))
-        valor_VPA = util.get_previous_data(VPA, dt.datetime(year=d.year, month=4, day=1))
-        if valor_VPA == 0:
+        month = dt.datetime(year=d.year-1, month=observed_month, day=1)
+        price = util.get_previous_data(prices, month, dropna=True)
+        valor_VPA = util.get_previous_data(VPA, month, dropna=True)
+        if valor_VPA == 0 or price == 0:
             BM = pd.Series([None], index=[d])    
         else:
             BM = pd.Series([float(valor_VPA)/price], index=[d])
