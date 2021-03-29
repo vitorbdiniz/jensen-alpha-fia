@@ -65,7 +65,7 @@ def get_previous_data(series, index, dropna=False):
     try:
         i = series.index.get_loc(index, method="pad")
     except:
-        i = 0
+        return 0
         
     return series.iloc[i]
 
