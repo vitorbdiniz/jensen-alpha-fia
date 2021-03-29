@@ -7,7 +7,7 @@ def verbose(msg, level, verbose=0):
         level in {1,2,3,4,5}
         v in {0,1,2,3,4,5}
     '''
-    if level <= verbose:
+    if msg != '' and level <= verbose:
         if msg[0] == '-' and msg[-1] == '-':
             msg = betwen_lines(msg)
         elif msg == "line" or msg == "l":
