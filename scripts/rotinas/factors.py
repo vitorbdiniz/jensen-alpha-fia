@@ -8,13 +8,9 @@ from scripts.carteiras.formacao_carteiras import forma_carteiras
 from scripts.fatores.fatores_risco import calcula_fatores_risco, nefin_factors
 from scripts.database.matrixDB import get_tickers
 
-from scripts.alpha.fundos_investimento import preprocess_fis
-from scripts.alpha.decompose import decompose_all_by_factors
-from scripts.alpha.alpha import jensens_alpha
-
 from scripts.util import util, padding as pad
 
-def busca_cotacoes(test, start, end, verbose, get_from, persist):
+def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, persist=False, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE BUSCA DE COTAÇÕES -", level=1, verbose=verbose)
 	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
@@ -23,7 +19,6 @@ def busca_cotacoes(test, start, end, verbose, get_from, persist):
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 			prices[ticker].index = pd.DatetimeIndex([util.str_to_date(x) for x in prices[ticker].index])
 	else:
-		tickers = "all"
 		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
 		pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
 
@@ -78,25 +73,4 @@ def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
 		
 	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco
-
-def monta_alphas(fatores_risco, fatores, test, persist, verbose): #TODO
-	pad.verbose("- INICIANDO PROCEDIMENTO DE CÁLCULO DO ALFA DE JENSEN -", level=1, verbose=verbose)	
-
-	fundos = pd.read_csv("./data/cotas_fias.csv")
-	fis = preprocess_fis(fundos, verbose=verbose)
-	if persist:
-		for fund in fis:
-			fis[fund].to_csv("./data/alphas/check/"+str(fund)+".csv")
-
-	if test:
-		alphas = dict()
-		alphas['ALASKA BLACK INSTITUCIONAL FUNDO DE INVESTIMENTO DE ACOES'] = pd.read_csv("./data/alphas/ALASKA BLACK INSTITUCIONAL FUNDO DE INVESTIMENTO DE ACOES.csv", index_col=0)	
-		alphas['COSMOS CAPITAL FUNDO DE INVESTIMENTO MULTIMERCADO - CRÉDITO PRIVADO INVESTIMENTO NO EXTERIOR'] = pd.read_csv("./data/alphas/COSMOS CAPITAL FUNDO DE INVESTIMENTO MULTIMERCADO - CRÉDITO PRIVADO INVESTIMENTO NO EXTERIOR.csv", index_col=0)
-		alphas['DYNAMO COUGAR FUNDO DE INVESTIMENTO EM AÇÕES'] = pd.read_csv("./data/alphas/DYNAMO COUGAR FUNDO DE INVESTIMENTO EM AÇÕES.csv", index_col=0)
-		alphas['REAL INVESTOR FUNDO DE INVESTIMENTO EM COTAS DE FUNDO DE INVESTIMENTO EM AÇÕES BDR NÍVEL I'] = pd.read_csv("./data/alphas/REAL INVESTOR FUNDO DE INVESTIMENTO EM COTAS DE FUNDO DE INVESTIMENTO EM AÇÕES BDR NÍVEL I.csv", index_col=0)
-	else:
-		alphas = jensens_alpha(fatores_risco, fis, fatores=fatores,verbose=verbose)
-		pad.persist_collection(alphas, path="./data/alphas/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo alfas. Não interrompa a execução. -")
-
-	return alphas
 
