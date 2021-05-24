@@ -20,22 +20,21 @@ def main(routine = "factors_complete", factor_name=None):
 	criterio_liquidez = 0.8 
 	longshort = False
 
-	test = True 
+	test = False
 	verbose = 5
 	persist = True
 
 	if routine == "factors_complete":
-		result = routines.factors_complete_routine(start, end, source = source, quantile = quantile, criterio_liquidez = criterio_liquidez, test = test, verbose = verbose, persist = persist)
+		result = routines.factors_complete_routine(start, end, source = source, quantile = quantile, criterio_liquidez = criterio_liquidez, longshort=longshort, test = test, verbose = verbose, persist = persist)
 	elif routine == 'single_factor' and factor_name is not None:
 		result = routines.single_factor_routine(factor_name, start, end, source = source, quantile = quantile,criterio_liquidez =criterio_liquidez,longshort=longshort, test = test,verbose =verbose, persist = persist)
 	else:
 		raise AttributeError(f"Rotina incorreta. Valor de `routine` inserido foi '{routine}'")
 	
-
 	return result
 
 
 if __name__ == "__main__":
-	routine = "single_factor"
+	routine = "factors_complete"
 	result = main(routine, factor_name='SMB')
 	print(result)

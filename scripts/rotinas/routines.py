@@ -16,7 +16,7 @@ from scripts.fatores.fatores_risco import calcula_fatores_risco
 
 
 
-def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8,test = False,verbose = 0,persist = False):
+def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8,longshort=False, test = False,verbose = 0,persist = False):
 	"""
 		Calcula todos os fatores para o todo o período selecionado
 		Rotina:
@@ -49,7 +49,7 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	pad.persist_collection(carteiras, path="./data/carteiras/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
 	
 	#### Cálculo de fatores de risco
-	fatores_risco = factors.monta_fatores(prices, carteiras, start, end, verbose=verbose, test=test)
+	fatores_risco = factors.monta_fatores(prices, carteiras, start, end, verbose=verbose, longshort=longshort, test=test)
 	if type(fatores_risco) == dict:
 		pad.persist_collection(fatores_risco, path="./data/fatores/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 	else:

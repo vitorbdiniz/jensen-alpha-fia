@@ -54,14 +54,14 @@ def monta_carteiras(prices, amostra_aprovada, quantile, start, end, verbose=0, t
 	pad.verbose("line", level=1, verbose=verbose)
 	return carteiras
 
-def monta_fatores(prices, carteiras, start, end, verbose=0, test=False):
+def monta_fatores(prices, carteiras, start, end, verbose=0, longshort=False, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE CÁLCULO DE FATORES DE RISCO -", level=5, verbose=verbose)
 	if test:
 		fatores_risco = nefin_factors()
 		fatores_risco.to_csv("./data/fatores/risk_factors.csv")
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
-		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
+		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, longshort=longshort, verbose=verbose)
 		
 	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco
