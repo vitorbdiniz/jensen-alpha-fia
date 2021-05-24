@@ -10,7 +10,7 @@ from scripts.database.matrixDB import get_tickers
 
 from scripts.util import util, padding as pad
 
-def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, persist=False, test=False):
+def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE BUSCA DE COTAÇÕES -", level=1, verbose=verbose)
 	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
@@ -20,13 +20,11 @@ def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, per
 			prices[ticker].index = pd.DatetimeIndex([util.str_to_date(x) for x in prices[ticker].index])
 	else:
 		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
-		pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
 
 	pad.verbose("line", level=1, verbose=verbose)
 	return prices
 
-def monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist):
-
+def monta_amostras(prices, start, end, criterio_liquidez=0.8, verbose=0, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE AVALIAÇÃO DA AMOSTRA -", level=1, verbose=verbose)
 	if test:
 		amostra_aprovada = pd.read_csv("./data/criterios/amostra_aprovada.csv", index_col=0)
@@ -34,12 +32,11 @@ def monta_amostras(prices, test, start, end, criterio_liquidez, verbose, persist
 
 	else:
 		amostra_aprovada = criterios_elegibilidade(prices, start = start, end = end, criterion = criterio_liquidez, verbose = verbose)
-		pad.persist(amostra_aprovada, path="./data/criterios/amostra_aprovada.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo amostra avaliada. Não interrompa a execução. -")
-	
+
 	pad.verbose("line", level=1, verbose=verbose)
 	return amostra_aprovada
 
-def monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbose, persist):
+def monta_carteiras(prices, amostra_aprovada, quantile, start, end, verbose=0, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE FORMAÇÃO DE CARTEIRAS -", level=1, verbose=verbose)
 	if test:
 		carteiras = dict()
@@ -53,12 +50,11 @@ def monta_carteiras(prices, amostra_aprovada, quantile, test, start, end, verbos
 			carteiras[c].index = pd.DatetimeIndex([util.str_to_date(x) for x in carteiras[c].index])
 	else:
 		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, verbose)
-		pad.persist_collection(carteiras, path="./data/carteiras/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
 
 	pad.verbose("line", level=1, verbose=verbose)
 	return carteiras
 
-def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
+def monta_fatores(prices, carteiras, start, end, verbose=0, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE CÁLCULO DE FATORES DE RISCO -", level=5, verbose=verbose)
 	if test:
 		fatores_risco = nefin_factors()
@@ -66,10 +62,6 @@ def monta_fatores(prices, carteiras, start, end, test, verbose, persist):
 		#fatores_risco = pd.read_csv("./data/fatores/fatores_risco.csv", index_col=0)
 	else:
 		fatores_risco = calcula_fatores_risco(prices, carteiras, start, end, verbose)
-		if type(fatores_risco) == dict:
-			pad.persist_collection(fatores_risco, path="./data/fatores/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
-		else:
-			pad.persist(fatores_risco, path="./data/fatores/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 		
 	pad.verbose("line", level=1, verbose=verbose)
 	return fatores_risco

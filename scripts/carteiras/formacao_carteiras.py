@@ -18,24 +18,30 @@ from scripts.carteiras.fator_qualidade import carteiraQuality
 
 """
 
-def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today(), end= dt.date.today(), verbose=0):
-    carteiras = dict()
+def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today(), end= dt.date.today(), fatores_desejados='all', verbose=0):
+    if fatores_desejados == 'all' or fatores_desejados is None:
+        fatores_desejados = ['SMB','HML','IML','WML','BAB']
+    elif type(fatores_desejados) == str:
+        fatores_desejados = [fatores_desejados]
 
-    #betas = getBeta(prices, amostra_aprovada,start, end, verbose)
-    #betas.to_csv("./data/alphas/betas.csv")
-    #betas = pd.read_csv("./data/alphas/betas.csv", index_col=0)
+    fatores_dict = {
+        'SMB' : {'name':'size'     , 'above_name':'big'      , 'below_name':'small'},
+        'HML' : {'name':'value'    , 'above_name':'high'     , 'below_name':'low'},
+        'IML' : {'name':'liquidity', 'above_name':'liquid'   , 'below_name':'illiquid'},
+        'WML' : {'name':'momentum' , 'above_name':'winner'   , 'below_name':'loser'},
+        'BAB' : {'name':'BAB'      , 'above_name':'high_beta', 'below_name':'low_beta'}
+    }
 
     closing_prices = rearange_prices(prices, start, end, column = "Close")
     volumes = rearange_prices(prices, start, end, column = "Volume")
 
-    carteiras['size']       = monta_carteiras("tamanho", "big", "small", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['value']      = monta_carteiras("valor", "high", "low", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['momentum']   = monta_carteiras("momentum", "winner", "loser", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    carteiras['liquidity']  = monta_carteiras("liquidez", "illiquid", "liquid", {"volumes":volumes, "prices":closing_prices}, amostra_aprovada, quantile, rejected=[30, None], start=start, end=end, verbose=verbose)
-    carteiras['BAB']        = monta_carteiras("BAB", "high_beta", "low_beta", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    
-    #carteiras['quality']    = monta_carteiras("qmj", "quality", "junk", closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
-    
+    carteiras = {
+        fatores_dict[fac]['name']: monta_carteiras(fatores_dict[fac]['name'], fatores_dict[fac]['above_name'], fatores_dict[fac]['below_name'], {"volumes":volumes, "prices":closing_prices}, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+                                    if fac == 'IML' else 
+                                    monta_carteiras(fatores_dict[fac]['name'], fatores_dict[fac]['above_name'], fatores_dict[fac]['below_name'], closing_prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
+    for fac in fatores_desejados
+    }
+        
     return carteiras
 
 """
