@@ -49,7 +49,7 @@ def monta_carteiras(prices, amostra_aprovada, quantile, start, end, verbose=0, t
 		for c in carteiras:
 			carteiras[c].index = pd.DatetimeIndex([util.str_to_date(x) for x in carteiras[c].index])
 	else:
-		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start, end, verbose)
+		carteiras = forma_carteiras(prices, amostra_aprovada, quantile, start=start, end=end, verbose=verbose)
 
 	pad.verbose("line", level=1, verbose=verbose)
 	return carteiras

@@ -37,11 +37,11 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	"""
 
 	#### Busca de preços de ações
-	prices = factors.busca_cotacoes(start, end, verbose=verbose, get_from=source, test=test)
+	prices = factors.busca_cotacoes(start, end, verbose=verbose, get_from=source, test=True)
 	pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
 
 	#### Avaliação da amostra
-	amostra_aprovada = factors.monta_amostras(prices, start, end, criterio_liquidez=criterio_liquidez, verbose=verbose, test=test)
+	amostra_aprovada = factors.monta_amostras(prices, start, end, criterio_liquidez=criterio_liquidez, verbose=verbose, test=True)
 	pad.persist(amostra_aprovada, path="./data/criterios/amostra_aprovada.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo amostra avaliada. Não interrompa a execução. -")
 	
 	#### Formação de carteiras para cada período
