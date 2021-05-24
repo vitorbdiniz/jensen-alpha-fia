@@ -25,7 +25,9 @@ Manifest.toml
 
 
 #Arquivos csv 
-data/
+data/prices/
+data/alphas/
+data/returns_decomposition/
 
 #Notas avulsas
 notes/
