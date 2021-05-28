@@ -36,5 +36,5 @@ def main(routine = "factors_complete", factor_name=None):
 
 if __name__ == "__main__":
 	routine = "factors_complete"
-	result = main(routine, factor_name='SMB')
+	result = main(routine)
 	print(result)

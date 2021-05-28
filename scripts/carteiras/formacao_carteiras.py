@@ -27,7 +27,7 @@ def forma_carteiras(prices, amostra_aprovada, quantile=1/3, start= dt.date.today
     fatores_dict = {
         'SMB' : {'name':'size'     , 'above_name':'big'      , 'below_name':'small'},
         'HML' : {'name':'value'    , 'above_name':'high'     , 'below_name':'low'},
-        'IML' : {'name':'liquidity', 'above_name':'liquid'   , 'below_name':'illiquid'},
+        'IML' : {'name':'liquidity', 'above_name':'illiquid'   , 'below_name':'liquid'},
         'WML' : {'name':'momentum' , 'above_name':'winner'   , 'below_name':'loser'},
         'BAB' : {'name':'BAB'      , 'above_name':'high_beta', 'below_name':'low_beta'}
     }
