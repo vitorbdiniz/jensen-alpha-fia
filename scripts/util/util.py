@@ -393,7 +393,7 @@ def mean_annual_return(array):
 
 """
 
-def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = True, form="DataFrame"):
+def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persist = False, form="DataFrame"):
     pad.verbose("Buscando série histórica da Selic", level=5, verbose=verbose)
     start = dateReformat(str(start))
     end = dateReformat(str(end))
@@ -420,7 +420,7 @@ def getSelic(start = dt.date.today(), end = dt.date.today(), verbose = 0, persis
     selic.index = pd.DatetimeIndex(selic.index)
     if persist:
         selic.to_csv("./data/selic.csv")
-    if form == "Series":
+    if form == "Series" or form==pd.Series:
         selic = selic["valor"]
 
     pad.verbose("line", level=5, verbose=verbose)

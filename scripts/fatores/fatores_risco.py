@@ -8,47 +8,84 @@ from scripts.util import util
 from scripts.util import padding as pad
 from scripts.data import busca_dados
 
-def calcula_fatores_risco(prices, carteiras, start= str(dt.date.today()), end= str(dt.date.today()), verbose=False):
-    
+def calcula_fatores_risco(prices=None, carteiras=None, start= str(dt.date.today()), end= str(dt.date.today()), fatores_desejados='all', longshort=False,verbose=0):
+    '''
+        prices
+        carteiras 
+        start
+        end
+        fatores_desejados: {list} fatores possíveis ['MKT','SMB','HML','IML','WML','BAB']
+        longshort {boolean} Caso True, retorna fator, carteira long e carteira short. Senão, apenas fator
+        verbose
+    '''
     pad.verbose("line", level=2, verbose=verbose)
+    if fatores_desejados == 'all' or fatores_desejados is None:
+        fatores_desejados = ['MKT','SMB','HML','IML','WML','BAB']
+    elif type(fatores_desejados) == str:
+        fatores_desejados = [fatores_desejados]
+
+    fatores_dict = {
+        'MKT' : {'name':'market'   , 'long_name':'Ibov'     , 'short_name':'Risk Free'},
+        'SMB' : {'name':'size'     , 'long_name':'small'    , 'short_name':'big'},
+        'HML' : {'name':'value'    , 'long_name':'high'     , 'short_name':'low'},
+        'IML' : {'name':'liquidity', 'long_name':'illiquid' , 'short_name':'liquid'},
+        'WML' : {'name':'momentum' , 'long_name':'winner'   , 'short_name':'loser'},
+        'BAB' : {'name':'BAB'      , 'long_name':'low_beta' , 'short_name':'high_beta'}
+    }
     
-    closing_prices = util.rearange_prices(prices, start, end, column = "Close")
-    returns = pd.DataFrame({ticker : util.getReturns(closing_prices[ticker], form="Series") for ticker in closing_prices.columns}, index = closing_prices.index).dropna(how="all")
-    dates = util.date_range(start, end)
-
+    dates = pd.date_range(start=start, end=end)
     fatores = pd.DataFrame( index=dates )
-    long = pd.DataFrame( index=dates )
-    short = pd.DataFrame( index=dates )
 
-    fatores["MKT"], long["MKT"], short["MKT"] = marketFactor(Rm="^BVSP", Rf = "selic", start=start, end=end, verbose=verbose)
-    fatores["SMB"], long["SMB"], short["SMB"] = calculate_factor_all_dates(carteiras["size"], returns, factor_name="tamanho", nome_carteira_long="small", nome_carteira_short="big",  verbose=verbose)
-    fatores["HML"], long["HML"], short["HML"] = calculate_factor_all_dates(carteiras["value"], returns, factor_name="valor", nome_carteira_long="high", nome_carteira_short="low",  verbose=verbose)
-    fatores["IML"], long["IML"], short["IML"] = calculate_factor_all_dates(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira_long="illiquid", nome_carteira_short="liquid",  verbose=verbose)
-    fatores["WML"], long["WML"], short["WML"] = calculate_factor_all_dates(carteiras["momentum"], returns, factor_name="momentum", nome_carteira_long="winner", nome_carteira_short="loser",  verbose=verbose)
-    fatores["BAB"], long["BAB"], short["BAB"] = calculate_factor_all_dates(carteiras["BAB"], returns, factor_name="beta", nome_carteira_long="low_beta", nome_carteira_short="high_beta",  verbose=verbose)
+    if longshort:
+            long = pd.DataFrame( index=dates )
+            short = pd.DataFrame( index=dates )
+    if prices is not None:
+        closing_prices = util.rearange_prices(prices, start, end, column = "Close")
+        returns = pd.DataFrame({ticker : util.getReturns(closing_prices[ticker], form="Series") for ticker in closing_prices.columns}, index = closing_prices.index).dropna(how="all")
+    
+    for fac in fatores_desejados:
+        if fac == 'MKT':
+            factor_value = marketFactor(Rm="^BVSP", Rf = "selic", start=start, end=end, longshort=longshort, verbose=verbose)
+        else:
+            factor_value = calculate_factor_all_dates(carteiras[ fatores_dict[fac]['name'] ], returns, factor_name=fatores_dict[fac]['name'], nome_carteira_long=fatores_dict[fac]['long_name'], nome_carteira_short=fatores_dict[fac]['short_name'],  longshort=longshort, verbose=verbose)
+
+        if longshort:
+            factor_value, long_port, short_port = factor_value
+            long[fac], short[fac] = long_port, short_port
+        fatores[fac] = factor_value
+
+    #fatores["MKT"], long["MKT"], short["MKT"]
+    #fatores["SMB"], long["SMB"], short["SMB"] = calculate_factor_all_dates(carteiras["size"], returns, factor_name="tamanho", nome_carteira_long="small", nome_carteira_short="big",  verbose=verbose)
+    #fatores["HML"], long["HML"], short["HML"] = calculate_factor_all_dates(carteiras["value"], returns, factor_name="valor", nome_carteira_long="high", nome_carteira_short="low",  verbose=verbose)
+    #fatores["IML"], long["IML"], short["IML"] = calculate_factor_all_dates(carteiras["liquidity"], returns, factor_name="liquidez", nome_carteira_long="illiquid", nome_carteira_short="liquid",  verbose=verbose)
+    #fatores["WML"], long["WML"], short["WML"] = calculate_factor_all_dates(carteiras["momentum"], returns, factor_name="momentum", nome_carteira_long="winner", nome_carteira_short="loser",  verbose=verbose)
+    #fatores["BAB"], long["BAB"], short["BAB"] = calculate_factor_all_dates(carteiras["BAB"], returns, factor_name="beta", nome_carteira_long="low_beta", nome_carteira_short="high_beta",  verbose=verbose)
     #fatores["QMJ"] = calculate_factor_all_dates(carteiras["quality"], returns, factor_name="qualidade", nome_carteira_long="quality", nome_carteira_short="junk",  verbose=verbose)
     
     fatores.dropna(how="all", inplace=True)
-    long.dropna(how="all", inplace=True)
-    short.dropna(how="all", inplace=True)
+    if longshort:
+        long.dropna(how="all", inplace=True)
+        short.dropna(how="all", inplace=True)
+        fatores = {"fatores_risco":fatores, "long_scores":long, "short_scores":short}
 
-    return {"fatores_risco":fatores, "long_scores":long, "short_scores":short}
+    return fatores
 
-def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=str(dt.date.today()), verbose=0):   
+def marketFactor(Rm = "^BVSP", Rf = "selic",start = str(dt.date.today()), end=str(dt.date.today()), longshort=False, verbose=0):   
     pad.verbose("- Calculando fator de risco de mercado -", level=2, verbose=verbose)
     
     ibov = busca_dados.get_prices(Rm, start, end, verbose=0)["^BVSP"]
-    
+
     Rm = util.getReturns(ibov["Close"], form="Series")
     Rf = util.getSelic(start, end, form="Series")
+
     factor = Rm - Rf
-    
+    result = (factor, Rm, Rf) if longshort else factor
+
     pad.verbose("line", level=2, verbose=verbose)
+    return result
 
-    return (factor, Rm, Rf)
 
-
-def calculate_factor_all_dates(carteiras, returns, factor_name, nome_carteira_long, nome_carteira_short,  verbose=0):
+def calculate_factor_all_dates(carteiras, returns, factor_name, nome_carteira_long, nome_carteira_short,  longshort=False, verbose=0):
     """
 
         Calcula fatores de risco para aqueles que possuem portfólios.
@@ -74,8 +111,10 @@ def calculate_factor_all_dates(carteiras, returns, factor_name, nome_carteira_lo
             pad.verbose(f"---- Carteira não encontrada para o período {d}", level=5, verbose=verbose)
             
     factor = long - short
+    result = (factor, long, short) if longshort else factor
+
     pad.verbose("line", level=2, verbose=verbose)
-    return (factor, long, short)
+    return result
 
 def calculate_factor(returns, portfolios, long, short):
     returns = pd.Series( winsorize(returns.values, limits=[0.05,0.05], nan_policy='omit'), index = returns.index)
@@ -87,6 +126,7 @@ def calculate_factor(returns, portfolios, long, short):
         elif portfolios.loc[i] == short:
             portfolioShort.append(returns.loc[i])
     
+
     portfolioLong = util.none_to_zero(portfolioLong)
     portfolioShort = util.none_to_zero(portfolioShort)
     
