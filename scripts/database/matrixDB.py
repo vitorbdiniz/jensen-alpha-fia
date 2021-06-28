@@ -1,39 +1,30 @@
 import pymysql
-
 import pandas as pd
+
 import numpy as np
 import datetime as dt
 
 from os.path import realpath
 from scripts.database.env import env
-from scripts.util import util
-from scripts.util import padding as pad
 
-class SQLError(RuntimeError):
-    def __init__(self, expression, message):
-        self.expression = expression
-        self.message = message
 
 '''
 connecting to TC-Matrix's databank
 '''
 def connect_Matrix(environment = "prod"):
-    credentials = env(environement=environment)
+    credentials = env(environement=environment) 
     database = pymysql.connect(host=credentials.get_host(), user=credentials.get_user(), password=credentials.get_password(), db=credentials.get_dbname())
     return database.cursor()
 
 '''
 execute a specific MySQL query
 '''
-def execute_sql(query,environment = "prod", verbose=False):
+def execute_sql(query, environment = "prod", verbose=False):
     cursor = connect_Matrix(environment=environment)
-    try:
-        if verbose:
-            print('Executando consulta ao banco de dados')
-        cursor.execute(query=query)
-        df = pd.DataFrame(cursor.fetchall())
-    except:
-        raise SQLError('execute_sql()', 'Falha de consulta')
+    if verbose:
+        print('Executando consulta ao banco de dados')
+    cursor.execute(query=query)
+    df = pd.DataFrame(cursor.fetchall())
     cursor.close()
     return df
 
