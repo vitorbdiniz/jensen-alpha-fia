@@ -10,7 +10,7 @@ from scripts.database.matrixDB import get_tickers
 
 from scripts.util import util, padding as pad
 
-def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, test=False):
+def busca_cotacoes(start, end, tickers = "all", verbose=0, test=False):
 	pad.verbose("- INICIANDO PROCEDIMENTO DE BUSCA DE COTAÇÕES -", level=1, verbose=verbose)
 	if test:
 		tickers = list(pd.read_csv("./data/ticker_list.csv", index_col=0)["tickers"])
@@ -19,7 +19,7 @@ def busca_cotacoes(start, end, tickers = "all", get_from='yahoo', verbose=0, tes
 			prices[ticker] = pd.read_csv("./data/prices/" + ticker + ".csv", index_col=0)
 			prices[ticker].index = pd.DatetimeIndex([util.str_to_date(x) for x in prices[ticker].index])
 	else:
-		prices = get_prices(tickers, start, end, verbose=verbose, get_from=get_from)
+		prices = get_prices(tickers, start, end, verbose=verbose)
 
 	pad.verbose("line", level=1, verbose=verbose)
 	return prices

@@ -1,7 +1,7 @@
 import pandas as pd
 #Verbose configurations
 
-def verbose(msg, level, verbose=0):
+def verbose(msg, level, verbose=0, end='\n'):
     '''
         Printa mensagens na tela para um nível de verbose
         level in {1,2,3,4,5}
@@ -12,8 +12,7 @@ def verbose(msg, level, verbose=0):
             msg = betwen_lines(msg)
         elif msg == "line" or msg == "l":
             msg = get_line()
-        print(msg)
-    
+        print(msg, end=end)    
     return
 
 def get_line():

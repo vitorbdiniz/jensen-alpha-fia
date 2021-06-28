@@ -16,7 +16,7 @@ from scripts.fatores.fatores_risco import calcula_fatores_risco
 
 
 
-def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8,longshort=False, test = False,verbose = 0,persist = False):
+def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8, test = False,verbose = 0,persist = False):
 	"""
 		Calcula todos os fatores para o todo o período selecionado
 		Rotina:
@@ -37,11 +37,11 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	"""
 
 	#### Busca de preços de ações
-	prices = factors.busca_cotacoes(start, end, verbose=verbose, get_from=source, test=True)
+	prices = factors.busca_cotacoes(start, end, verbose=verbose, test=test)
 	pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
 
 	#### Avaliação da amostra
-	amostra_aprovada = factors.monta_amostras(prices, start, end, criterio_liquidez=criterio_liquidez, verbose=verbose, test=True)
+	amostra_aprovada = factors.monta_amostras(prices, start, end, criterio_liquidez=criterio_liquidez, verbose=verbose, test=test)
 	pad.persist(amostra_aprovada, path="./data/criterios/amostra_aprovada.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo amostra avaliada. Não interrompa a execução. -")
 	
 	#### Formação de carteiras para cada período
@@ -49,7 +49,7 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 	pad.persist_collection(carteiras, path="./data/carteiras/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")
 	
 	#### Cálculo de fatores de risco
-	fatores_risco = factors.monta_fatores(prices, carteiras, start, end, verbose=verbose, longshort=longshort, test=test)
+	fatores_risco = factors.monta_fatores(prices, carteiras, start, end, verbose=verbose, test=test)
 	if type(fatores_risco) == dict:
 		pad.persist_collection(fatores_risco, path="./data/fatores/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 	else:
@@ -61,7 +61,7 @@ def factors_complete_routine(start, end, source = "yahoo", quantile = 0.5,criter
 
 
 
-def single_factor_routine(factor, start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8,longshort=False, test = False,verbose = 0, persist = False):
+def single_factor_routine(factor, start, end, source = "yahoo", quantile = 0.5,criterio_liquidez = 0.8, test = False,verbose = 0, persist = False):
 	"""
 		Calcula um único fator para o todo o período selecionado.
 		Rotina:
@@ -84,7 +84,7 @@ def single_factor_routine(factor, start, end, source = "yahoo", quantile = 0.5,c
 
 	if factor != 'MKT':
 		#### Busca de preços de ações
-		prices = get_prices(start=start, end=end, verbose=verbose, get_from=source)
+		prices = get_prices(start=start, end=end, verbose=verbose)
 		pad.persist_collection(prices, path="./data/prices/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo preços. Não interrompa a execução. -")
 
 		#### Avaliação da amostra
@@ -96,13 +96,12 @@ def single_factor_routine(factor, start, end, source = "yahoo", quantile = 0.5,c
 		pad.persist_collection(carteiras, path="./data/carteiras/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo carteiras. Não interrompa a execução. -")	
 
 		#### Cálculo de fatores de risco
-		fatores_risco = calcula_fatores_risco(prices, carteiras, start=start, end=end, fatores_desejados=factor, longshort=longshort, verbose=verbose)
-		if type(fatores_risco) == dict:
-			pad.persist_collection(fatores_risco, path="./data/fatores/", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
-		else:
-			pad.persist(fatores_risco, path="./data/fatores/fatores_risco.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
+		fatores_risco = calcula_fatores_risco(prices, carteiras, start=start, end=end, fatores_desejados=factor, verbose=verbose)
 	else:
-		fatores_risco = calcula_fatores_risco(start = start, end=end, fatores_desejados=factor, longshort=longshort, verbose=verbose)
+		fatores_risco = calcula_fatores_risco(start = start, end=end, fatores_desejados=factor, verbose=verbose)
+
+	fatores_risco = fatores_risco[factor]
+	pad.persist(fatores_risco, path=f"./data/fatores/{factor}.csv", to_persist=persist, _verbose=verbose, verbose_level=2, verbose_str="- Persistindo fatores de risco. Não interrompa a execução. -")
 
 	pad.verbose("- FIM -", level=1, verbose=verbose)
 	return fatores_risco

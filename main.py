@@ -1,4 +1,5 @@
 from scripts.rotinas import routines
+from scripts.data.busca_dados import get_prices
 from datetime import date
 
 def main(routine = "factors_complete", factor_name=None):
@@ -12,29 +13,31 @@ def main(routine = "factors_complete", factor_name=None):
 			4. 'alpha_singleportfolio_complete' -> TODO
 			5. 'alpha_singleportfolio_onedate' -> TODO
 	"""
-	start = date(2010, 1, 1)
+	start = date(1994, 1, 1)
 	end = date.today()
 	source = "yahoo"
 
 	quantile = 1/3 
 	criterio_liquidez = 0.8 
-	longshort = False
+	longshort = True
 
 	test = False
 	verbose = 5
 	persist = True
 
 	if routine == "factors_complete":
-		result = routines.factors_complete_routine(start, end, source = source, quantile = quantile, criterio_liquidez = criterio_liquidez, longshort=longshort, test = test, verbose = verbose, persist = persist)
+		result = routines.factors_complete_routine(start, end, source = source, quantile = quantile, criterio_liquidez = criterio_liquidez, test = test, verbose = verbose, persist = persist)
 	elif routine == 'single_factor' and factor_name is not None:
-		result = routines.single_factor_routine(factor_name, start, end, source = source, quantile = quantile,criterio_liquidez =criterio_liquidez,longshort=longshort, test = test,verbose =verbose, persist = persist)
+		result = routines.single_factor_routine(factor_name, start, end, source = source, quantile = quantile,criterio_liquidez =criterio_liquidez, test = test,verbose =verbose, persist = persist)
+	elif routine == 'prices':
+		result = get_prices(['PETR4'], start='2010-01-01')
+	
 	else:
 		raise AttributeError(f"Rotina incorreta. Valor de `routine` inserido foi '{routine}'")
 	
 	return result
 
-
 if __name__ == "__main__":
-	routine = "factors_complete"
-	result = main(routine)
+	routine = "prices"
+	result = main(routine, 'MKT')
 	print(result)

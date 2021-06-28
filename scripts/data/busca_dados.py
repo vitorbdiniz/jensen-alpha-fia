@@ -6,9 +6,9 @@ import pandas_datareader as web
 #Workspace libs
 
 from scripts.database import matrixDB
+from scripts.util import padding as pad
 
-
-def get_prices(tickers='all', start=dt.date.today(), end=dt.date.today()):
+def get_prices(tickers='all', start=dt.date.today(), end=dt.date.today(), verbose=0):
     '''
         Busca cotações de uma lista de ativos para um determinado intervalo de tempo
 
@@ -23,23 +23,30 @@ def get_prices(tickers='all', start=dt.date.today(), end=dt.date.today()):
     elif type(tickers) != type([]):
         raise AttributeError("ticker deve ser 'all', 'ibov', '^BVSP' ou list")
 
-    prices = get_prices_from_yahoo(tickers, start, end)
+    prices = get_prices_from_yahoo(tickers, start, end, verbose=verbose)
     
     return prices
 
 def kill_units(tickers):
     return [t for t in tickers if len(t) == 5]
 
-def get_prices_from_yahoo(tickers, start, end):
+def get_prices_from_yahoo(tickers, start, end, verbose=0):
     prices = dict()
+    i = 1
     for t in tickers:
-        t = t.upper()        
+        t = t.upper()
+        pad.verbose(f'{i}. Buscando Preços de {t} ---- faltam {len(tickers)-i} ---- status: ', level=5, verbose=verbose, end='')
+        i+=1
         try:
             ticker = t if t[0] == '^' else str(t+".SA")
             p = web.get_data_yahoo(ticker, start, end)
             prices[t] = p
+            status = 'OK'
         except:
-            None
+            status = 'Não encontrado'
+        finally:
+            pad.verbose(status, level=5, verbose=verbose)
+
     return prices
 
 def str_to_datetime(string, datatype = 'datetime'):
