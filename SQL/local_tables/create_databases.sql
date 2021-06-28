@@ -1,1 +1,1 @@
-CREATE DATABASE TC_LABS_risk_factors;
+CREATE DATABASE risk_factors;

@@ -1,4 +1,4 @@
-USE TC_LABS_risk_factors;
+USE risk_factors;
 
 #basic dimensions
 CREATE TABLE time_dimension(
@@ -11,16 +11,19 @@ CREATE TABLE time_dimension(
     PRIMARY KEY(id)
 );
 
+
+
 CREATE TABLE funds_dimension(
 	id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
+    name VARCHAR2(100) NOT NULL,
     
     PRIMARY KEY(id)
 );
 
 CREATE TABLE ticker_dimension(
-	id INT NOT NULL,
+	id INT NOT NULL AUTO_INCREMENT,
     ticker VARCHAR(10) NOT NULL,
+	exchange VARCHAR(30) NOT NULL,
     
     PRIMARY KEY(id)
 );
@@ -41,17 +44,90 @@ CREATE TABLE prices(
     PRIMARY KEY(id)
 );
 
-CREATE TABLE risk_factors(
+#Risk factors
+##Fact Table
+CREATE TABLE risk_factors_fact(
 	id INT NOT NULL AUTO_INCREMENT,
 	time_id INT NOT NULL,
     
-    fator_mercado DOUBLE,
-	fator_tamanho DOUBLE,
-	fator_valor DOUBLE,
-    fator_liquidez DOUBLE,
-    fator_momentum DOUBLE,
-    fator_bab DOUBLE,
-    fator_qualidade DOUBLE,
+    market_factor_id INT NOT NULL,
+	size_factor_id INT NOT NULL,
+	value_factor_id INT NOT NULL,
+    illiquidity_factor_id INT NOT NULL,
+    momentum_factor_id INT NOT NULL,
+    betting_against_beta_factor_id INT NOT NULL,
+    quality_factor_id INT NOT NULL,
+    
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE market_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	market_return DOUBLE,
+    risk_free DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE size_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+
+
+CREATE TABLE value_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+    long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE momentum_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+
+
+CREATE TABLE illiquidity_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE betting_against_beta_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
+    
+    PRIMARY KEY(id)
+);
+CREATE TABLE quality_factor(
+	id INT NOT NULL AUTO_INCREMENT,
+    time_id INT NOT NULL,
+	long_portfolio_value DOUBLE,
+    short_portfolio_value DOUBLE,
+    risk_factor_value DOUBLE,
     
     PRIMARY KEY(id)
 );
@@ -154,12 +230,91 @@ ALTER TABLE prices
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
 ;
-ALTER TABLE risk_factors
-	ADD CONSTRAINT risk_fk_time FOREIGN KEY (time_id)
+
+ALTER TABLE quality_factor
+	ADD CONSTRAINT qmj_fk_time FOREIGN KEY (time_id)
 		REFERENCES time_dimension(id)
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
-;        
+;
+
+ALTER TABLE betting_against_beta_factor
+	ADD CONSTRAINT bab_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE momentum_factor
+	ADD CONSTRAINT wml_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+
+ALTER TABLE illiquidity_factor
+	ADD CONSTRAINT iml_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE value_factor
+	ADD CONSTRAINT hml_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+
+ALTER TABLE size_factor
+	ADD CONSTRAINT smb_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+ALTER TABLE market_factor
+	ADD CONSTRAINT mkt_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+
+ALTER TABLE risk_factors_fact
+	ADD CONSTRAINT risk_fk_time FOREIGN KEY (time_id)
+		REFERENCES time_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_mkt FOREIGN KEY(market_factor_id)
+		REFERENCES market_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_smb FOREIGN KEY(size_factor_id)
+		REFERENCES size_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_hml FOREIGN KEY(value_factor_id)
+		REFERENCES value_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_iml FOREIGN KEY(illiquidity_factor_id)
+		REFERENCES illiquidity_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_wml FOREIGN KEY(momentum_factor_id)
+		REFERENCES momentum_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_bab FOREIGN KEY(betting_against_beta_factor_id)
+		REFERENCES betting_against_beta_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT risk_fk_qmj FOREIGN KEY(quality_factor_id)
+		REFERENCES quality_factor(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE
+;
+
+
+
+        
 ALTER TABLE criteria
 	ADD CONSTRAINT criteria_fk_ticker FOREIGN KEY (ticker_id)
 		REFERENCES ticker_dimension(id)
