@@ -36,7 +36,6 @@ def get_prices_from_yahoo(tickers, start, end, verbose=0):
     for t in tickers:
         t = t.upper()
         pad.verbose(f'{i}. Buscando Preços de {t} ---- faltam {len(tickers)-i} ---- status: ', level=5, verbose=verbose, end='')
-        i+=1
         try:
             ticker = t if t[0] == '^' else str(t+".SA")
             p = web.get_data_yahoo(ticker, start, end)
@@ -45,6 +44,7 @@ def get_prices_from_yahoo(tickers, start, end, verbose=0):
         except:
             status = 'Não encontrado'
         finally:
+            i+=1
             pad.verbose(status, level=5, verbose=verbose)
 
     return prices

@@ -44,7 +44,7 @@ def populate_prices_table(prices, database=risk_factors_db(), verbose=0):
         try:
             Verbose(f'{i}. Persistindo preços de {ticker} ---- restam {len(prices.keys())-i} ---- status:', level=5, verbose=verbose, end=' ')
             populate_stock_prices_table(prices[ticker], ticker, database, verbose=verbose)
-            status = 'OK' 
+            status = 'OK'
         except:
             status = 'Abortado'
         finally:
