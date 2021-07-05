@@ -13,9 +13,9 @@ def main(routine = "factors_complete", factor_name=None):
 			4. 'alpha_singleportfolio_complete' -> TODO
 			5. 'alpha_singleportfolio_onedate' -> TODO
 	"""
-	start = date(1994, 1, 1)
+	start = date(2010, 1, 1)
 	end = date.today()
-	source = "yahoo"
+	source = "tc"
 
 	quantile = 1/3 
 	criterio_liquidez = 0.8 
@@ -38,6 +38,6 @@ def main(routine = "factors_complete", factor_name=None):
 	return result
 
 if __name__ == "__main__":
-	routine = "prices"
+	routine = "factors_complete"
 	result = main(routine, 'MKT')
 	print(result)

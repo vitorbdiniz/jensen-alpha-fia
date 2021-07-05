@@ -18,3 +18,22 @@ END;$$
 delimiter ;
 
 
+delimiter $$
+CREATE TRIGGER tr_insert_portfolios BEFORE INSERT ON portfolios
+FOR EACH ROW
+BEGIN
+	SET NEW.time_id = func_get_time_id(NEW.date_);
+    SET NEW.ticker_id = func_get_ticker_id(NEW.ticker);
+END;$$
+delimiter ;
+
+
+
+delimiter $$
+CREATE TRIGGER tr_insert_criteria BEFORE INSERT ON criteria
+FOR EACH ROW
+BEGIN
+	SET NEW.time_id = func_get_time_id(NEW.date_);
+    SET NEW.ticker_id = func_get_ticker_id(NEW.ticker);
+END;$$
+delimiter ;

@@ -66,8 +66,10 @@ CREATE TABLE risk_factors(
 
 CREATE TABLE criteria(
 	id INT NOT NULL AUTO_INCREMENT,
-	time_id INT NOT NULL,
-	ticker_id INT NOT NULL,
+	time_id INT,
+    date_ DATE,
+	ticker_id INT,
+    ticker VARCHAR(7),
     
     liquidez_minima BOOLEAN,
     listagem BOOLEAN,
@@ -76,17 +78,19 @@ CREATE TABLE criteria(
     PRIMARY KEY(id)
 );
 
-CREATE TABLE carteiras(
+CREATE TABLE portfolios(
 	id INT NOT NULL AUTO_INCREMENT,
-	time_id INT NOT NULL,
-	ticker_id INT NOT NULL,
+	time_id INT,
+    date_ DATE,
+	ticker_id INT,
+    ticker VARCHAR(7),
     
-    carteira_tamanho VARCHAR(15),
-    carteira_valor VARCHAR(15),
-    carteira_liquidez VARCHAR(15),
-    carteira_momentum VARCHAR(15),
-    carteira_beta VARCHAR(15),
-	carteira_qualidade VARCHAR(15),
+    carteira_tamanho VARCHAR(3),
+    carteira_valor VARCHAR(3),
+    carteira_liquidez VARCHAR(3),
+    carteira_momentum VARCHAR(3),
+    carteira_beta VARCHAR(3),
+	carteira_qualidade VARCHAR(3),
 
     PRIMARY KEY(id)
 );
@@ -181,16 +185,18 @@ ALTER TABLE criteria
 		ON DELETE CASCADE
 		ON UPDATE CASCADE
 ;
-ALTER TABLE carteiras
-	ADD CONSTRAINT carteiras_fk_ticker FOREIGN KEY (ticker_id)
-		REFERENCES ticker_dimension(id)
-		ON DELETE CASCADE
-		ON UPDATE CASCADE,
-	ADD CONSTRAINT carteiras_fk_time FOREIGN KEY (time_id)
+
+ALTER TABLE portfolios
+	ADD CONSTRAINT portfolios_fk_time FOREIGN KEY (time_id)
 		REFERENCES time_dimension(id)
 		ON DELETE CASCADE
-		ON UPDATE CASCADE
+		ON UPDATE CASCADE,
+	ADD CONSTRAINT portfolios_fk_ticker FOREIGN KEY (ticker_id)
+		REFERENCES ticker_dimension(id)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE	
 ;
+
 ALTER TABLE funds_performances
 	ADD CONSTRAINT performance_fk_fund FOREIGN KEY (fund_id)
 		REFERENCES funds_dimension(id)
